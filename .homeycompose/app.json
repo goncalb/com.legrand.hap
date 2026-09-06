@@ -1,0 +1,120 @@
+{
+  "id": "com.legrand.hap",
+  "version": "0.8.1",
+  "compatibility": ">=12.0.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Legrand with Netatmo (Local)"
+  },
+  "description": {
+    "en": "Local control of Legrand with Netatmo and BTicino devices (gateway, Smarther thermostat) through the HomeKit Accessory Protocol. No cloud required."
+  },
+  "category": [
+    "lights"
+  ],
+  "brandColor": "#DA5046",
+  "permissions": [],
+  "author": {
+    "name": "Gonçalo"
+  },
+  "api": {
+    "getLog": {
+      "method": "GET",
+      "path": "/log"
+    },
+    "clearLog": {
+      "method": "POST",
+      "path": "/log/clear"
+    },
+    "getDevices": {
+      "method": "GET",
+      "path": "/devices"
+    },
+    "identify": {
+      "method": "POST",
+      "path": "/identify"
+    },
+    "refresh": {
+      "method": "POST",
+      "path": "/refresh"
+    },
+    "setName": {
+      "method": "POST",
+      "path": "/device-name"
+    },
+    "listEndpoints": {
+      "method": "GET",
+      "path": "/endpoints"
+    },
+    "importPairing": {
+      "method": "POST",
+      "path": "/endpoint-import"
+    },
+    "pairDevice": {
+      "method": "POST",
+      "path": "/endpoint-pair"
+    },
+    "removeEndpoint": {
+      "method": "POST",
+      "path": "/endpoint-remove"
+    },
+    "setEndpointAddress": {
+      "method": "POST",
+      "path": "/endpoint-address"
+    },
+    "captureScene": {
+      "method": "GET",
+      "path": "/scene-capture"
+    },
+    "runScene": {
+      "method": "POST",
+      "path": "/scene-run"
+    },
+    "getScenes": {
+      "method": "GET",
+      "path": "/scene-list"
+    },
+    "saveScenes": {
+      "method": "POST",
+      "path": "/scene-save"
+    },
+    "getHeating": {
+      "method": "GET",
+      "path": "/heating"
+    },
+    "saveHeating": {
+      "method": "POST",
+      "path": "/heating-save"
+    },
+    "heatingOverride": {
+      "method": "POST",
+      "path": "/heating-override"
+    },
+    "heatingResume": {
+      "method": "POST",
+      "path": "/heating-resume"
+    }
+  },
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "tags": {
+    "en": [
+      "legrand",
+      "netatmo",
+      "bticino",
+      "homekit",
+      "hap",
+      "local",
+      "shutter",
+      "blinds"
+    ]
+  },
+  "source": "https://github.com/goncalb/com.legrand.hap",
+  "license": "GPL-3.0"
+}

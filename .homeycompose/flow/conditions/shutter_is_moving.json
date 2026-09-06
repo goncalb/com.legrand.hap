@@ -1,0 +1,4 @@
+{
+  "title": { "en": "Shutter !{{is|isn't}} moving" },
+  "args": [ { "type": "device", "name": "device", "filter": "driver_id=shutter" } ]
+}

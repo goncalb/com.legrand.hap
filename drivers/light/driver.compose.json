@@ -1,0 +1,96 @@
+{
+  "name": {
+    "en": "Light"
+  },
+  "class": "light",
+  "capabilities": [
+    "onoff",
+    "button.identify",
+    "button.rebuild"
+  ],
+  "platforms": [
+    "local"
+  ],
+  "connectivity": [
+    "lan"
+  ],
+  "images": {
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "large": "{{driverAssetsPath}}/images/large.png"
+  },
+  "pair": [
+    {
+      "id": "setup"
+    },
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "navigation": {
+        "next": "icons"
+      }
+    },
+    {
+      "id": "icons"
+    }
+  ],
+  "settings": [
+    {
+      "type": "group",
+      "label": {
+        "en": "Device information"
+      },
+      "children": [
+        {
+          "id": "serial",
+          "type": "label",
+          "label": {
+            "en": "Serial number"
+          },
+          "value": ""
+        },
+        {
+          "id": "model",
+          "type": "label",
+          "label": {
+            "en": "Model"
+          },
+          "value": ""
+        },
+        {
+          "id": "firmware",
+          "type": "label",
+          "label": {
+            "en": "Firmware"
+          },
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "capabilitiesOptions": {
+    "button.identify": {
+      "maintenanceAction": true,
+      "title": {
+        "en": "Blink the module"
+      },
+      "desc": {
+        "en": "The module's LED will blink so you can identify it."
+      }
+    },
+    "button.rebuild": {
+      "maintenanceAction": true,
+      "title": {
+        "en": "Rebuild device capabilities"
+      },
+      "desc": {
+        "en": "Re-creates this device's controls from the gateway data. Use if the device looks empty or out of date after an app update."
+      }
+    }
+  },
+  "energy": {
+    "approximation": {
+      "usageOn": 8,
+      "usageOff": 0
+    }
+  }
+}

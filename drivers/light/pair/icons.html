@@ -1,0 +1,51 @@
+<script type="text/javascript">
+  const ICONS = [
+    { id: '/icons/single.svg', label: 'Single switch' },
+    { id: '/icons/double.svg', label: 'Double switch' },
+    { id: '/icons/dimmer.svg', label: 'Dimmer' },
+  ];
+  let devices = [];
+
+  async function load() {
+    devices = await Homey.emit('get_selected_devices');
+    const el = document.getElementById('list');
+    el.innerHTML = '';
+    if (!devices.length) { el.innerHTML = '<p>No devices selected.</p>'; return; }
+    devices.forEach((d, i) => {
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.innerHTML = '<div class="n">' + d.name + '<br><small>' + (d.settings && d.settings.model || '') + '</small></div>' +
+        '<div class="opts">' + ICONS.map(ic =>
+          '<label><input type="radio" name="icon' + i + '" value="' + ic.id + '"' +
+          (d.icon === ic.id ? ' checked' : '') + '> ' + ic.label + '</label>').join('') + '</div>';
+      el.appendChild(row);
+    });
+  }
+
+  async function finish() {
+    try {
+      Homey.showLoadingOverlay();
+      for (let i = 0; i < devices.length; i++) {
+        const sel = document.querySelector('input[name="icon' + i + '"]:checked');
+        if (sel) devices[i].icon = sel.value;
+        await Homey.createDevice(devices[i]);
+      }
+      Homey.hideLoadingOverlay();
+      Homey.done();
+    } catch (e) {
+      Homey.hideLoadingOverlay();
+      Homey.alert('Could not add device: ' + (e && e.message || e));
+    }
+  }
+  load();
+</script>
+<style>
+  .row { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #ddd; align-items: flex-start; }
+  .n { flex: 1; font-weight: 600; } .n small { font-weight: normal; color: #777; }
+  .opts label { display: block; font-size: 13px; margin: 2px 0; white-space: nowrap; }
+  button { margin-top: 14px; padding: 10px 18px; width: 100%; }
+</style>
+<h2>Choose the icon for each light</h2>
+<p>Select what the physical wall plate looks like. This can't be changed later, except from Homey's own icon gallery.</p>
+<div id="list"></div>
+<button onclick="finish()">Add devices</button>

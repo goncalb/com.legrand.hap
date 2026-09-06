@@ -1,0 +1,5 @@
+{
+  "title": { "en": "Resume heating plan" },
+  "hint": { "en": "Cancels any override and manual room holds; the plan takes over again." },
+  "args": []
+}

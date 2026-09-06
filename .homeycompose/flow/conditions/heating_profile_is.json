@@ -1,0 +1,49 @@
+{
+  "title": {
+    "en": "Heating profile !{{is|isn't}}"
+  },
+  "titleFormatted": {
+    "en": "Heating profile !{{is|isn't}} [[profile]]"
+  },
+  "args": [
+    {
+      "type": "dropdown",
+      "name": "profile",
+      "title": {
+        "en": "Profile"
+      },
+      "values": [
+        {
+          "id": "comfort",
+          "title": {
+            "en": "Comfort"
+          }
+        },
+        {
+          "id": "eco",
+          "title": {
+            "en": "Eco"
+          }
+        },
+        {
+          "id": "night",
+          "title": {
+            "en": "Night"
+          }
+        },
+        {
+          "id": "away",
+          "title": {
+            "en": "Away"
+          }
+        },
+        {
+          "id": "frost",
+          "title": {
+            "en": "Frost guard"
+          }
+        }
+      ]
+    }
+  ]
+}

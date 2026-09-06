@@ -1,0 +1,9 @@
+{
+  "type": "boolean",
+  "title": { "en": "Heating" },
+  "getable": true,
+  "setable": false,
+  "uiComponent": "sensor",
+  "insights": true,
+  "icon": "/assets/cap_heating.svg"
+}

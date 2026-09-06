@@ -1,0 +1,710 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script type="text/javascript" src="/homey.js" data-origin="settings"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { overscroll-behavior-y: contain; }
+    body { font-family: -apple-system, system-ui, sans-serif; margin: 0; padding: 8px 10px 20px; font-size: 14px; background: #f2f2f5; color: #1c1c1e; }
+
+    /* text tabs with underline */
+    .tabs { display: flex; justify-content: space-around; margin: 2px 0 10px; border-bottom: 0.5px solid #ddd; }
+    body .tabs button { background: none !important; border: none !important; border-bottom: 2px solid transparent !important; border-radius: 0 !important;
+      padding: 8px 6px !important; margin: 0 !important; font-size: 14px !important; color: #8a8a8e !important; font-weight: 500 !important; }
+    body .tabs button.active { color: #DA5046 !important; border-bottom-color: #DA5046 !important; }
+    .tab { display: none; } .tab.active { display: block; }
+
+    /* section headers & inset groups */
+    .section { font-size: 12px; color: #8a8a8e; text-transform: uppercase; letter-spacing: .03em; margin: 16px 14px 6px; font-weight: 500; }
+    .group { background: #fff; border-radius: 12px; overflow: hidden; }
+    .row { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-bottom: 0.5px solid #ececec; min-height: 44px; }
+    .row:last-child { border-bottom: none; }
+    .row .main { flex: 1; min-width: 0; }
+    .row .t { font-size: 14px; }
+    .row .d { font-size: 12px; color: #8a8a8e; margin-top: 2px; overflow-wrap: anywhere; }
+    .row .v { font-size: 13px; color: #8a8a8e; white-space: nowrap; }
+    .row .chev { color: #c7c7cc; font-size: 18px; margin-left: -2px; }
+    .row.link { color: #2b6de8; }
+    .row.link .t { color: #2b6de8; }
+    .row.dim .t, .row.dim .d { color: #b0b0b5; }
+    .muted { color: #8a8a8e; font-size: 12px; }
+    .pill { display: inline-block; font-size: 10px; border-radius: 6px; padding: 1px 6px; background: #eee; margin-left: 4px; vertical-align: 1px; }
+    .pill.add { background: #ffe8c2; }
+    .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; background: #bbb; }
+    .dot.on { background: #34c759; }
+
+    /* controls */
+    body button, body select, body input[type=text], body input[type=number] {
+      padding: 6px 10px !important; font-size: 13px !important; border: 0.5px solid #d0d0d5 !important; border-radius: 8px !important;
+      background: #fff !important; color: #1c1c1e !important; margin: 0 !important; line-height: 1.3 !important; font-weight: 500 !important; white-space: nowrap; }
+    body button.text { border: none !important; background: none !important; color: #DA5046 !important; padding: 4px 6px !important; }
+    body button.primary { background: #DA5046 !important; color: #fff !important; border-color: #DA5046 !important; }
+    body button.danger { color: #b33 !important; }
+    .actions { display: flex; gap: 8px; margin: 12px 0 0; }
+    .actions button { flex: 1; padding: 10px 0 !important; border-radius: 10px !important; }
+    .full { width: 100%; }
+
+    /* toggle switch */
+    .sw { position: relative; width: 44px; height: 26px; flex: none; }
+    .sw input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .sw span { position: absolute; inset: 0; background: #d1d1d6; border-radius: 13px; transition: .15s; }
+    .sw span:before { content: ''; position: absolute; width: 22px; height: 22px; left: 2px; top: 2px; background: #fff; border-radius: 50%; transition: .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+    .sw input:checked + span { background: #34c759; }
+    .sw input:checked + span:before { transform: translateX(18px); }
+
+    /* scene entry: name + inline target controls, include toggle on the right */
+    .entry .ctl { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; color: #555; font-size: 13px; }
+    .entry .ctl input[type=number] { width: 72px; }
+    .entry.off .ctl { opacity: .4; pointer-events: none; }
+    .entry.off .t { color: #b0b0b5; }
+
+    /* heating */
+    .bar-h { display: flex; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 4px; background: #eee; }
+    .p-comfort { background: #f4b183; } .p-eco { background: #8fd2b8; } .p-night { background: #9bb3e8; } .p-away { background: #b8bfd6; } .p-frost { background: #9bd0e8; }
+    .pt { display: flex; gap: 6px; align-items: center; padding: 6px 0; }
+    .pt input[type=time] { width: 92px; }
+    .matrix { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr 40px; gap: 6px; align-items: center; padding: 8px 12px; border-bottom: 0.5px solid #ececec; font-size: 13px; }
+    .matrix:last-child { border-bottom: none; }
+    .matrix input[type=number] { width: 100%; padding: 5px 6px !important; text-align: center; }
+    .matrix .hd { font-size: 10px; color: #8a8a8e; text-transform: uppercase; }
+    .chip { display: inline-block; font-size: 10px; border-radius: 6px; padding: 1px 6px; margin-left: 4px; }
+
+    /* log */
+    #log { font-family: ui-monospace, monospace; font-size: 11px; white-space: pre-wrap; background: #111; color: #ddd;
+           padding: 8px; border-radius: 10px; max-height: 60vh; overflow: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    .warn { color: #ffb454; } .error { color: #ff6b6b; } .debug { color: #888; }
+    textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 11px; border: 0.5px solid #d0d0d5; border-radius: 8px; padding: 6px; }
+    .pad { padding: 10px 12px; }
+    details { border-bottom: 0.5px solid #ececec; }
+    details:last-child { border-bottom: none; }
+    summary { padding: 11px 12px; font-size: 14px; cursor: pointer; list-style: none; display: flex; align-items: center; }
+    summary::-webkit-details-marker { display: none; }
+    summary::after { content: '›'; margin-left: auto; color: #c7c7cc; font-size: 18px; transition: transform .15s; }
+    details[open] summary::after { transform: rotate(90deg); }
+    .help { padding: 0 12px 12px 12px; font-size: 13px; color: #444; line-height: 1.45; }
+    .help ol, .help ul { margin: 4px 0 8px; padding-left: 18px; }
+    .help p { margin: 4px 0 8px; }
+  </style>
+</head>
+<body>
+  <div class="tabs">
+    <button id="tab-devices" class="active" onclick="showTab('devices')">Devices</button>
+    <button id="tab-scenes" onclick="showTab('scenes')">Scenes</button>
+    <button id="tab-heating" onclick="showTab('heating')">Heating</button>
+    <button id="tab-log" onclick="showTab('log')">Log</button>
+    <button id="tab-gateway" onclick="showTab('gateway')">Gateways</button>
+  </div>
+
+  <!-- DEVICES -->
+  <div id="devices" class="tab active">
+    <div class="section">Gateways</div><div class="group" id="gwcard"></div>
+    <div class="section">Thermostats</div><div class="group" id="list-thermostat"></div>
+    <div class="section">Shutters</div><div class="group" id="list-shutter"></div>
+    <div class="section">Lights</div><div class="group" id="list-light"></div>
+    <div class="section">Remotes</div><div class="group" id="list-remote"></div>
+    <div class="section">&nbsp;</div>
+    <div class="group"><div class="row link" onclick="refreshDb()"><div class="main"><div class="t">Refresh from gateway</div></div><span id="dbstate" class="v"></span></div></div>
+  </div>
+
+  <!-- SCENES -->
+  <div id="scenes" class="tab">
+    <div class="section">Saved scenes</div>
+    <div class="group" id="scenelist"></div>
+    <p class="muted" style="margin:6px 14px">Use the "Activate scene" card in Flows.</p>
+    <div id="sceneedit" style="display:none;">
+      <div class="section" id="editlabel">Edit scene</div>
+      <div class="group">
+        <div class="row"><input id="sceneicon" type="text" placeholder="🙂" maxlength="4" style="width:56px; text-align:center; font-size:18px !important" /><input id="scenename" type="text" placeholder="Scene name" style="flex:1" /></div>
+        <div class="row" style="flex-wrap:wrap; gap:4px" id="emojirow"></div>
+        <div class="row link" onclick="captureIntoScene()"><div class="main"><div class="t">Capture current state</div></div></div>
+      </div>
+      <div class="section" style="display:flex; align-items:center; gap:8px">Devices in this scene
+        <button class="text" style="margin-left:auto; padding:2px 6px !important; font-size:11px !important" onclick="setAllEntries(true)">Select all</button>
+        <button class="text" style="padding:2px 6px !important; font-size:11px !important" onclick="setAllEntries(false)">None</button></div>
+      <div class="group" id="sceneentries"></div>
+      <div class="actions">
+        <button class="primary" onclick="saveScene()">Save scene</button>
+        <button onclick="cancelScene()">Cancel</button>
+      </div>
+      <div class="actions" id="deleterow" style="display:none"><button class="danger" onclick="deleteScene(editing)">Delete scene</button></div>
+    </div>
+  </div>
+
+  <!-- HEATING -->
+  <div id="heating" class="tab">
+    <div class="section">Plan</div>
+    <div class="group">
+      <div class="row"><div class="main"><div class="t">Heating plan active</div><div class="d">Homey applies the profiles below to every room that follows the plan.</div></div>
+        <label class="sw"><input type="checkbox" id="h-enabled" /><span></span></label></div>
+      <div class="row"><div class="main"><div class="t" id="h-now" style="color:#555">—</div></div></div>
+      <div class="row"><div class="main"><div class="t">Timeline notifications</div><div class="d">Post a note on Homey's timeline at every profile change (schedule and overrides).</div></div>
+        <label class="sw"><input type="checkbox" id="h-notify" onchange="HomeyRef.set('heatingNotify', this.checked)" /><span></span></label></div>
+      <div class="row"><div class="main"><div class="t">Notify room manual changes</div><div class="d">Also post when a room is set manually (dial, Homey or Home + Control) and how long it holds.</div></div>
+        <label class="sw"><input type="checkbox" id="h-notify-rooms" onchange="HomeyRef.set('heatingNotifyRooms', this.checked)" /><span></span></label></div>
+      <div class="row"><div class="main"><div class="d" style="display:flex; gap:6px; flex-wrap:wrap; align-items:center">
+        <span>Override</span>
+        <select id="h-ovp"><option value="comfort">Comfort</option><option value="eco">Eco</option><option value="night">Night</option><option value="away">Away</option><option value="frost">Frost guard</option></select>
+        <select id="h-ovd"><option value="next">until next switch</option><option value="1">1 h</option><option value="2">2 h</option><option value="4">4 h</option><option value="8">8 h</option><option value="24">24 h</option><option value="forever">until cancelled</option></select>
+        <button class="text" onclick="applyOverride()">Apply</button><button class="text" onclick="resumePlan()">Resume plan</button></div></div></div>
+    </div>
+
+    <div class="section">Plans <span style="text-transform:none; letter-spacing:0">— tap to expand, tap a day to edit</span></div>
+    <div class="group" id="h-plans"></div>
+    <div class="group" style="margin-top:8px"><div class="row"><input id="h-newname" type="text" placeholder="New plan name (copies the active plan)" style="flex:1" /><button class="text" onclick="newPlan()">Create</button></div></div>
+
+    <div class="section">Profiles · °C per room</div>
+    <div class="group" id="h-rooms"></div>
+    <div class="section">House-wide profiles</div>
+    <div class="group">
+      <div class="matrix"><span>Away</span><input type="number" id="h-away" step="0.5" min="5" max="30" /><span class="muted">°C</span><span></span><span></span></div>
+      <div class="matrix"><span>Frost guard</span><input type="number" id="h-frost" step="0.5" min="5" max="15" /><span class="muted">°C</span><span></span><span></span></div>
+    </div>
+    <div class="actions"><button class="primary" onclick="saveHeating()">Save heating plan</button><button onclick="loadHeating()">Discard changes</button></div>
+    <p class="muted" style="margin:8px 12px">Switch the thermostats' own schedule off in Home + Control (manual mode) so both plans don't compete.</p>
+  </div>
+
+  <!-- LOG -->
+  <div id="log-tab" class="tab">
+    <div class="section">Filter</div>
+    <div class="group"><div class="row">
+      <select id="filter" style="flex:1"><option value="">All devices</option></select>
+      <button onclick="loadLog()">Reload</button>
+      <button onclick="clearLog()">Clear</button>
+      <label class="sw" title="auto-refresh"><input type="checkbox" id="auto" checked /><span></span></label>
+    </div></div>
+    <div class="section">Activity</div>
+    <div id="log"></div>
+  </div>
+
+  <!-- GATEWAYS -->
+  <div id="gateway" class="tab">
+    <div class="section">Paired HomeKit devices</div>
+    <div class="group" id="eplist"></div>
+
+    <div class="section">&nbsp;</div>
+    <div class="group">
+      <details id="discdet">
+        <summary style="flex-wrap:wrap; gap:6px"><span style="font-size:15px; font-weight:500">Found on the network</span><span id="disccount" style="display:flex; gap:4px; flex-wrap:wrap"></span></summary>
+        <div id="disclist"></div>
+      </details>
+    </div>
+    <div id="pairbox" style="display:none">
+      <div class="section">Pair <span id="pairname" style="text-transform:none; letter-spacing:0"></span></div>
+      <div class="group">
+        <div class="row" id="pairmanual" style="display:none"><div class="main"><div class="d">HomeKit id and IP (from the hap-probe "discover" output or the app log)</div>
+          <div style="display:flex; gap:6px; margin-top:6px"><input id="pairid" type="text" placeholder="00:91:FF:AC:59:AD" style="flex:1" /><input id="pairaddr" type="text" placeholder="192.168.1.80" style="width:140px" /></div></div></div>
+        <div class="row"><input id="pairpin" type="text" placeholder="XXX-XX-XXX" inputmode="numeric" class="full" /></div>
+        <div class="row link" onclick="doPair()"><div class="main"><div class="t">Pair with this code</div></div></div>
+        <div class="row link" onclick="document.getElementById('pairbox').style.display='none'"><div class="main"><div class="t" style="color:#8a8a8e">Cancel</div></div></div>
+      </div>
+    </div>
+
+    <div class="section">Help</div>
+    <div class="group">
+      <details>
+        <summary>How this app connects</summary>
+        <div class="help">
+          <p>The Legrand gateway (Home + Control) is also a HomeKit bridge. This app pairs with it directly over your local network using the HomeKit protocol — the same way an iPhone would — and controls your switches, shutters and remotes without the Legrand cloud.</p>
+          <p>Nothing changes for the Home + Control app: it keeps working as before through Legrand's own channel.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Pairing for the first time</summary>
+        <div class="help">
+          <ol>
+            <li>Make sure the gateway is <strong>not</strong> already added to Apple Home (see below).</li>
+            <li>In Homey, add a device → this app → any device type. The wizard lists Legrand gateways found on your network.</li>
+            <li>Select the gateway and enter its 8-digit <strong>HomeKit setup code</strong>. You find it on the label of the gateway (XXX-XX-XXX), or in the Home + Control app under the gateway's HomeKit / Apple Home section.</li>
+            <li>Pairing takes a few seconds. Afterwards the wizard shows your devices; tick the ones to add.</li>
+          </ol>
+          <p>You only pair once. Adding more devices later skips straight to the device list.</p>
+        </div>
+      </details>
+      <details>
+        <summary>"Already paired" / pairing refused</summary>
+        <div class="help">
+          <p>A HomeKit bridge accepts only one controller. If the gateway is already in Apple Home, it refuses new pairings and the wizard shows it as <em>already paired</em>.</p>
+          <p><strong>Option 1 — remove it in Apple Home.</strong> Home app → Home Settings → Hubs &amp; Bridges → the Legrand gateway → Remove Bridge from Home. This also removes the Legrand devices from Apple Home.</p>
+          <p><strong>Option 2 — reset HomeKit on the gateway.</strong> Needed if it still shows as paired after removal, or was paired by a device you no longer have.</p>
+          <ol>
+            <li>Reach the reset button: on a gateway socket, unscrew the plate and the ring around the socket; on a gateway module it is on the front panel. It is marked with a small cogwheel — use a toothpick. The cover depends on your Legrand range (on Arteor, remove the decorative cover).</li>
+            <li>Press and hold about 10 seconds while watching the LED: green → off → a brief orange/red flash. <strong>Release at that first flash.</strong> A short purple flash confirms the reset.</li>
+            <li><strong>Do not keep holding.</strong> Continuing past the first flash performs a full reset of the installation (all devices, rooms and settings). The HomeKit reset only clears the pairing and the gateway's Wi-Fi settings.</li>
+            <li>Open Home + Control and reconnect the gateway to your Wi-Fi (the app guides you through it). Your devices and rooms are kept.</li>
+            <li>Once the gateway is back online, pair it from Homey. The HomeKit pairing now lives on Homey — do not add the gateway to Apple Home again.</li>
+          </ol>
+        </div>
+      </details>
+      <details>
+        <summary>Gateway not found on the network</summary>
+        <div class="help">
+          <p>Discovery uses mDNS (Bonjour). If Homey and the gateway are on different VLANs or Wi-Fi networks, enable mDNS reflection on your router — or skip discovery entirely: enter the gateway's IP address in the <strong>Connection</strong> section above and give it a DHCP reservation so it never changes.</p>
+        </div>
+      </details>
+      <details>
+        <summary>Device names, icons and modes</summary>
+        <div class="help">
+          <ul>
+            <li>Devices arrive with the gateway's module names (e.g. "Switch 16"). Rename them in Homey; use <strong>Blink</strong> to see which wall module is which.</li>
+            <li>Icons are chosen when a device is added and can later only be changed from Homey's own icon gallery.</li>
+            <li>Changing a shutter's control mode (Aperture ↔ Orientable) in Home + Control is picked up automatically: the slat-tilt controls appear or disappear on the next refresh.</li>
+          </ul>
+        </div>
+      </details>
+      <details>
+        <summary>Starting over</summary>
+        <div class="help">
+          <p>To pair with a different gateway or after a HomeKit reset: remove the app's devices, uninstall and reinstall the app (this clears the stored pairing keys), then pair again. The gateway's HomeKit pairing must be reset too if it still remembers Homey.</p>
+        </div>
+      </details>
+    </div>
+
+
+    <div class="section">Expert</div>
+    <div class="group">
+      <details>
+        <summary>Pair a device by HomeKit id and IP</summary>
+        <div class="help"><p>For devices that don't show up under "Found on the network" (mDNS blocked between networks).</p>
+          <button onclick="startPair('', 'device by IP')">Open pairing form</button></div>
+      </details>
+      <details>
+        <summary>Import pairing data</summary>
+        <div class="help"><p>Paste the content of <code>pairings.json</code> from the hap-probe script (one or several devices). This lets Homey reuse a pairing created on a computer.</p>
+          <textarea id="pairjson" rows="5"></textarea>
+          <div style="margin-top:8px"><button onclick="importPairing()">Import</button></div></div>
+      </details>
+      <details>
+        <summary>Expose standard tilt (%) capability</summary>
+        <div class="help"><p>Only for bridging shutters to Apple Home via HomeKit/Matter apps. Adds a percent-based tilt Flow card next to the degree-based one.</p>
+          <label style="display:flex; gap:8px; align-items:center"><label class="sw"><input type="checkbox" id="exposeStd" onchange="saveExposeStd()" /><span></span></label><span>Enabled</span></label></div>
+      </details>
+    </div>
+  </div>
+
+<script type="text/javascript">
+  let HomeyRef;
+  const TABS = { devices: 'devices', scenes: 'scenes', heating: 'heating', log: 'log-tab', gateway: 'gateway' };
+
+  function showTab(name) {
+    for (const [k, id] of Object.entries(TABS)) {
+      document.getElementById(id).classList.toggle('active', k === name);
+      document.getElementById('tab-' + k).classList.toggle('active', k === name);
+    }
+    if (name === 'log') loadLog();
+    if (name === 'scenes') loadScenes();
+    if (name === 'heating') loadHeating();
+    if (name === 'gateway') pairingStatus();
+  }
+
+  function saveExposeStd() {
+    HomeyRef.set('exposeStandardTilt', document.getElementById('exposeStd').checked, (err) => { if (err) HomeyRef.alert('Could not save: ' + err.message); });
+  }
+
+  function onHomeyReady(Homey) {
+    HomeyRef = Homey;
+    Homey.ready();
+    Homey.get('exposeStandardTilt', (err, v) => { if (!err) document.getElementById('exposeStd').checked = !!v; });
+    Homey.get('heatingNotify', (err, v) => { if (!err) document.getElementById('h-notify').checked = !!v; });
+    Homey.get('heatingNotifyRooms', (err, v) => { if (!err) document.getElementById('h-notify-rooms').checked = !!v; });
+    pairingStatus(); loadDevices(); loadLog();
+    setInterval(() => {
+      if (document.getElementById('log-tab').classList.contains('active') && document.getElementById('auto').checked) loadLog();
+      if (document.getElementById('devices').classList.contains('active') && !document.querySelector('#devices input[type=text]')) loadDevices();
+    }, 5000);
+  }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  /* ---------- gateways / endpoints ---------- */
+  let pairTarget = null;
+
+  function pairingStatus() {
+    HomeyRef.api('GET', '/endpoints', null, (err, res) => {
+      if (err || !res) return;
+      const ep = document.getElementById('eplist');
+      ep.innerHTML = res.endpoints.length ? '' : '<div class="row"><div class="main muted">Nothing paired yet — pair a device below or import pairing data.</div></div>';
+      for (const e of res.endpoints) {
+        const addr = e.address ? (e.address.address + ':' + e.address.port) : '';
+        ep.innerHTML +=
+          '<div class="row"><div class="main"><div class="t"><span class="dot' + (e.connected ? ' on' : '') + '"></span>' + esc(e.name) + '</div>' +
+          '<div class="d">' + esc(e.id) + ' · ' + (e.connected ? e.accessories + ' accessories' : 'connecting…') + '</div>' +
+          '<div class="d" style="margin-top:6px; display:flex; gap:6px; align-items:center">' +
+          '<input type="text" value="' + esc(addr) + '" placeholder="IP (optional)" style="width:150px" id="addr-' + e.id.replace(/:/g, '') + '">' +
+          '<button class="text" onclick="setAddress(\'' + e.id + '\')">Save IP</button>' +
+          '<button class="text" onclick="removeEndpoint(\'' + e.id + '\')" style="color:#b33 !important">Remove</button></div></div></div>';
+      }
+      const dl = document.getElementById('disclist');
+      const all = res.discovered;
+      const mine = all.filter((d) => d.pairedHere).length;
+      const ready = all.filter((d) => !d.pairedHere && !d.pairedElsewhere).length;
+      const other = all.length - mine - ready;
+      const pill = (n, label, bg, fg) => n ? '<span style="font-size:12px; border-radius:8px; padding:2px 8px; background:' + bg + '; color:' + fg + '; white-space:nowrap">' + n + ' ' + label + '</span>' : '';
+      document.getElementById('disccount').innerHTML = all.length
+        ? pill(mine, 'Homey', '#d9f2e3', '#1e7a45') + pill(ready, 'ready', '#DA5046', '#fff') + pill(other, 'elsewhere', '#ececef', '#6b6b70')
+        : '<span class="muted">none</span>';
+      dl.innerHTML = all.length ? '' : '<div class="row"><div class="main muted">No HomeKit devices found. If your device is missing, check that Homey and the device share a network (mDNS).</div></div>';
+      const order = (d) => d.pairedHere ? 0 : d.pairedElsewhere ? 2 : 1;
+      for (const d of [...all].sort((a, b) => order(a) - order(b) || String(a.name).localeCompare(String(b.name)))) {
+        const state = d.pairedHere ? '<span class="pill" style="background:#d9f2e3; color:#1e7a45">paired with Homey</span>'
+          : d.pairedElsewhere ? '<span class="pill">paired elsewhere</span>' : '<span class="pill add">ready to pair</span>';
+        dl.innerHTML +=
+          '<div class="row' + (d.pairedElsewhere ? ' dim' : '') + '"><div class="main"><div class="t">' + esc(d.name) + (d.legrand ? '' : ' <span class="pill">other</span>') + state + '</div>' +
+          '<div class="d">' + esc(d.model || '') + ' · ' + esc(d.id) + ' · ' + esc(d.address) + ':' + d.port + '</div></div>' +
+          ((d.pairedHere || d.pairedElsewhere) ? '' : '<button class="text" onclick="startPair(\'' + d.id + '\', \'' + esc(d.name) + '\')">Pair</button>') + '</div>';
+      }
+    });
+  }
+
+  function startPair(id, name) {
+    pairTarget = id;
+    document.getElementById('pairname').textContent = name;
+    document.getElementById('pairpin').value = '';
+    document.getElementById('pairmanual').style.display = id ? 'none' : 'block';
+    document.getElementById('pairbox').style.display = 'block';
+    document.getElementById('pairbox').scrollIntoView({ behavior: 'smooth' });
+    (id ? document.getElementById('pairpin') : document.getElementById('pairid')).focus();
+  }
+  function doPair() {
+    const pin = document.getElementById('pairpin').value.trim();
+    const id = pairTarget || document.getElementById('pairid').value.trim();
+    const address = pairTarget ? undefined : document.getElementById('pairaddr').value.trim();
+    if (!id || !pin) return HomeyRef.alert('Enter the device id and the 8-digit setup code');
+    if (!pairTarget && !address) return HomeyRef.alert('Enter the device IP address');
+    HomeyRef.api('POST', '/endpoint-pair', { id, pin, address }, (err) => {
+      if (err) return HomeyRef.alert('Pairing failed: ' + err.message);
+      document.getElementById('pairbox').style.display = 'none';
+      setTimeout(pairingStatus, 2500); setTimeout(loadDevices, 6000);
+    });
+  }
+  function setAddress(id) {
+    const address = document.getElementById('addr-' + id.replace(/:/g, '')).value.trim();
+    HomeyRef.api('POST', '/endpoint-address', { id, address }, (err) => { if (err) return HomeyRef.alert('Failed: ' + err.message); setTimeout(pairingStatus, 2500); });
+  }
+  function removeEndpoint(id) {
+    HomeyRef.confirm('Remove this HomeKit pairing from Homey? Its devices will become unavailable.', 'warning', (err, ok) => {
+      if (!ok) return;
+      HomeyRef.api('POST', '/endpoint-remove', { id }, () => { pairingStatus(); loadDevices(); });
+    });
+  }
+  function importPairing() {
+    const raw = document.getElementById('pairjson').value.trim();
+    if (!raw) return HomeyRef.alert('Paste the JSON first');
+    let json; try { json = JSON.parse(raw); } catch (e) { return HomeyRef.alert('Invalid JSON: ' + e.message); }
+    HomeyRef.api('POST', '/endpoint-import', { json }, (err, res) => {
+      if (err) return HomeyRef.alert('Import failed: ' + err.message);
+      document.getElementById('pairjson').value = '';
+      HomeyRef.alert('Imported: ' + res.added.join(', '));
+      setTimeout(pairingStatus, 2500); setTimeout(loadDevices, 6000);
+    });
+  }
+
+  /* ---------- devices ---------- */
+  function devRow(d) {
+    const isGw = d.klass === 'gateway';
+    const shown = d.homeyName || d.friendlyName || d.name;
+    const sub = ((d.homeyName || d.friendlyName) ? d.name + ' · ' : '') + (d.model || '') + (d.firmware ? ' · fw ' + d.firmware : '');
+    const pills = (d.hasDim ? '<span class="pill">dim</span>' : '') + (d.hasTilt ? '<span class="pill">tilt</span>' : '') +
+                  ((!isGw && !d.added) ? '<span class="pill add">not added</span>' : '');
+    return '<div class="row' + ((!isGw && !d.added) ? ' dim' : '') + '" data-name="' + esc(d.friendlyName || d.name) + '">' +
+      '<div class="main"><div class="t">' + esc(shown) + pills + '</div><div class="d">' + esc(sub) + '<br>' + esc(d.serial) + '</div></div>' +
+      '<span class="v">' + esc(d.status || '') + '</span>' +
+      (isGw ? '' : '<button class="text" onclick="identify(\'' + esc(d.serial) + '\')">Blink</button>' +
+        (d.added ? '' : '<button class="text" onclick="renameDevice(\'' + esc(d.serial) + '\', this)">Name</button>')) + '</div>';
+  }
+
+  // Inline rename for accessories not yet added in Homey: the name is used when the device is added.
+  function renameDevice(serial, btn) {
+    const row = btn.closest('.row');
+    const info = row.querySelector('.main');
+    const current = row.dataset.name || '';
+    info.innerHTML = '<input type="text" class="full" value="' + esc(current) + '" placeholder="Name to use when adding" />' +
+      '<div class="d" style="margin-top:6px"><button class="primary" onclick="saveName(\'' + esc(serial) + '\', this)">Save</button> ' +
+      '<button onclick="loadDevices()">Cancel</button></div>';
+    info.querySelector('input').focus();
+  }
+  function saveName(serial, btn) {
+    const name = btn.closest('.main').querySelector('input').value.trim();
+    HomeyRef.api('POST', '/device-name', { serial, name }, (err) => {
+      if (err) return HomeyRef.alert('Could not save name: ' + err.message);
+      loadDevices();
+    });
+  }
+
+  function loadDevices() {
+    HomeyRef.api('GET', '/devices', null, (err, devices) => {
+      if (err) return;
+      const groups = { gateway: [], thermostat: [], shutter: [], light: [], remote: [] };
+      for (const d of devices) (groups[d.klass] || groups.remote).push(d);
+      document.getElementById('gwcard').innerHTML = groups.gateway.map(devRow).join('') || '<div class="row"><div class="main muted">No gateway connected</div></div>';
+      for (const k of ['thermostat', 'shutter', 'light', 'remote'])
+        document.getElementById('list-' + k).innerHTML = groups[k].map(devRow).join('') || '<div class="row"><div class="main muted">None</div></div>';
+      const filter = document.getElementById('filter'); const current = filter.value;
+      filter.innerHTML = '<option value="">All devices</option>';
+      for (const d of devices) if (d.klass !== 'gateway') { const o = document.createElement('option'); o.value = d.serial; o.textContent = d.homeyName || d.friendlyName || d.name; filter.appendChild(o); }
+      filter.value = current;
+    });
+  }
+
+  function identify(serial) { HomeyRef.api('POST', '/identify', { serial }, (err) => { if (err) HomeyRef.alert('Identify failed: ' + err.message); }); }
+
+  function refreshDb() {
+    document.getElementById('dbstate').textContent = 'refreshing…';
+    HomeyRef.api('POST', '/refresh', null, (err) => { document.getElementById('dbstate').textContent = err ? 'failed' : 'updated'; if (!err) loadDevices(); });
+  }
+
+  /* ---------- scenes ---------- */
+  let scenes = [], editing = null, editEntries = [];
+  const TILTS = [0, 22, 44, 66, 88];
+
+  const EMOJIS = ['🌙','☀️','🌅','🌇','🏠','🚪','🛏️','🍽️','🎬','📺','🧘','❄️','🔥','🌧️','🎉','👶','🧹','✈️'];
+  function renderEmojiRow() {
+    const row = document.getElementById('emojirow');
+    row.innerHTML = EMOJIS.map(e => '<button class="text" style="font-size:18px !important; padding:2px 4px !important" onclick="document.getElementById(\'sceneicon\').value=\'' + e + '\'">' + e + '</button>').join('');
+  }
+  function loadScenes() {
+    HomeyRef.api('GET', '/scene-list', null, (err, list) => {
+      if (err) return;
+      scenes = list || [];
+      const el = document.getElementById('scenelist');
+      el.innerHTML = scenes.map(sc =>
+        '<div class="row"><div class="main" onclick="editScene(\'' + sc.id + '\')"><div class="t">' + (sc.icon ? esc(sc.icon) + ' ' : '') + esc(sc.name) + '</div>' +
+        '<div class="d">' + sc.entries.length + ' device' + (sc.entries.length === 1 ? '' : 's') + '</div></div>' +
+        '<button class="text" onclick="runScene(\'' + sc.id + '\')">Run</button>' +
+        '<button class="text" style="color:#8a8a8e !important" onclick="duplicateScene(\'' + sc.id + '\')">Copy</button>' +
+        '<span class="chev" onclick="editScene(\'' + sc.id + '\')">›</span></div>').join('') +
+        '<div class="row link" onclick="newScene()"><div class="main"><div class="t">New scene</div></div></div>';
+    });
+  }
+
+  function renderEntries() {
+    const el = document.getElementById('sceneentries');
+    el.innerHTML = '';
+    editEntries.forEach((e, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'row entry' + (e.enabled ? '' : ' off');
+      let ctl = '';
+      if (e.klass === 'shutter') {
+        ctl = '<span>Position</span><input type="number" min="0" max="100" step="1" value="' + (e.position ?? '') + '" placeholder="keep" ' +
+              'onchange="editEntries[' + i + '].position = this.value === \'\' ? null : Number(this.value)"><span>%</span>';
+        if (e.hasTilt) ctl += '<span style="margin-left:6px">Slats</span><select onchange="editEntries[' + i + '].tilt = this.value === \'\' ? null : Number(this.value)">' +
+          '<option value="">keep</option>' + TILTS.map(t => '<option value="' + t + '"' + (e.tilt === t ? ' selected' : '') + '>' + t + '°</option>').join('') + '</select>';
+      } else if (e.klass === 'thermostat') {
+        ctl = '<span>Mode</span><select onchange="editEntries[' + i + '].mode = this.value">' +
+              '<option value="heat"' + (e.mode !== 'off' ? ' selected' : '') + '>Heat</option><option value="off"' + (e.mode === 'off' ? ' selected' : '') + '>Off</option></select>' +
+              '<span style="margin-left:6px">Target</span><input type="number" min="5" max="30" step="0.5" value="' + (e.target ?? '') + '" ' +
+              'onchange="editEntries[' + i + '].target = this.value === \'\' ? null : Number(this.value)"><span>°C</span>';
+      } else {
+        ctl = '<span>Set to</span><select onchange="editEntries[' + i + '].on = this.value === \'1\'">' +
+              '<option value="1"' + (e.on ? ' selected' : '') + '>On</option><option value="0"' + (!e.on ? ' selected' : '') + '>Off</option></select>';
+      }
+      wrap.innerHTML =
+        '<div class="main"><div class="t">' + esc(e.name) + '<span class="pill">' + esc(e.klass) + '</span></div>' +
+        '<div class="ctl">' + ctl + '</div></div>' +
+        '<label class="sw"><input type="checkbox" ' + (e.enabled ? 'checked' : '') +
+        ' onchange="editEntries[' + i + '].enabled = this.checked; this.closest(\'.entry\').classList.toggle(\'off\', !this.checked)"><span></span></label>';
+      el.appendChild(wrap);
+    });
+  }
+
+  function captureIntoScene() {
+    HomeyRef.api('GET', '/scene-capture', null, (err, list) => {
+      if (err) return HomeyRef.alert('Capture failed: ' + err.message);
+      const prev = new Map(editEntries.map(e => [e.serial, e]));
+      editEntries = (list || []).map(d => Object.assign({}, d, { enabled: prev.has(d.serial) ? prev.get(d.serial).enabled : true }));
+      renderEntries();
+    });
+  }
+
+  function duplicateScene(id) {
+    const sc = scenes.find(s => s.id === id); if (!sc) return;
+    scenes.push({ name: sc.name + ' (copy)', icon: sc.icon || '', entries: JSON.parse(JSON.stringify(sc.entries)) });
+    HomeyRef.api('POST', '/scene-save', { scenes }, (err) => { if (err) return HomeyRef.alert('Copy failed: ' + err.message); loadScenes(); });
+  }
+  function setAllEntries(on) { editEntries.forEach(e => e.enabled = on); renderEntries(); }
+  function newScene() {
+    editing = null; editEntries = [];
+    document.getElementById('editlabel').textContent = 'New scene';
+    document.getElementById('scenename').value = '';
+    document.getElementById('sceneicon').value = '';
+    renderEmojiRow();
+    document.getElementById('deleterow').style.display = 'none';
+    document.getElementById('sceneedit').style.display = 'block';
+    captureIntoScene();
+    document.getElementById('sceneedit').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function editScene(id) {
+    const sc = scenes.find(s => s.id === id); if (!sc) return;
+    editing = sc.id;
+    document.getElementById('editlabel').textContent = 'Edit scene';
+    document.getElementById('scenename').value = sc.name;
+    document.getElementById('sceneicon').value = sc.icon || '';
+    renderEmojiRow();
+    document.getElementById('deleterow').style.display = 'flex';
+    HomeyRef.api('GET', '/scene-capture', null, (err, list) => {
+      const inScene = new Map(sc.entries.map(e => [e.serial, e]));
+      editEntries = (list || []).map(d => { const e = inScene.get(d.serial); return Object.assign({}, d, e || {}, { enabled: !!e, name: d.name, hasTilt: d.hasTilt }); });
+      renderEntries();
+      document.getElementById('sceneedit').style.display = 'block';
+      document.getElementById('sceneedit').scrollIntoView({ behavior: 'smooth' });
+    });
+  }
+
+  function saveScene() {
+    const name = document.getElementById('scenename').value.trim();
+    const icon = document.getElementById('sceneicon').value.trim();
+    if (!name) return HomeyRef.alert('Give the scene a name');
+    const entries = editEntries.filter(e => e.enabled).map(e => {
+      const out = { serial: e.serial, klass: e.klass };
+      if (e.klass === 'shutter') { if (e.position != null) out.position = e.position; if (e.tilt != null) out.tilt = e.tilt; }
+      else if (e.klass === 'thermostat') { out.mode = e.mode || 'heat'; if (e.target != null) out.target = e.target; }
+      else out.on = !!e.on;
+      return out;
+    });
+    if (editing) { const sc = scenes.find(s => s.id === editing); sc.name = name; sc.icon = icon; sc.entries = entries; } else scenes.push({ name, icon, entries });
+    HomeyRef.api('POST', '/scene-save', { scenes }, (err) => { if (err) return HomeyRef.alert('Save failed: ' + err.message); cancelScene(); loadScenes(); });
+  }
+  function cancelScene() { editing = null; editEntries = []; document.getElementById('sceneedit').style.display = 'none'; }
+  function deleteScene(id) {
+    HomeyRef.confirm('Delete this scene?', 'warning', (err, ok) => {
+      if (!ok) return;
+      scenes = scenes.filter(s => s.id !== id);
+      HomeyRef.api('POST', '/scene-save', { scenes }, () => { cancelScene(); loadScenes(); });
+    });
+  }
+  function runScene(id) { HomeyRef.api('POST', '/scene-run', { id }, (err) => { if (err) HomeyRef.alert('Scene failed: ' + err.message); }); }
+
+  /* ---------- heating ---------- */
+  const HDAYS = ['mon','tue','wed','thu','fri','sat','sun'], HDN = { mon:'Monday', tue:'Tuesday', wed:'Wednesday', thu:'Thursday', fri:'Friday', sat:'Saturday', sun:'Sunday' };
+  const PROF = { comfort:'Comfort', eco:'Eco', night:'Night', away:'Away', frost:'Frost guard' };
+  let H = null, hRooms = [], hOpenDay = null;
+
+  function loadHeating() {
+    HomeyRef.api('GET', '/heating', null, (err, res) => {
+      if (err) return;
+      H = res.config; hRooms = res.rooms;
+      for (const r of hRooms) {
+        if (!H.rooms[r.serial]) H.rooms[r.serial] = { follow: true, temps: { comfort: 20, eco: 18.5, night: 17 } };
+        if (H.rooms[r.serial].temps.night == null) H.rooms[r.serial].temps.night = 17;
+      }
+      document.getElementById('h-enabled').checked = !!H.enabled;
+      document.getElementById('h-away').value = H.house.away; document.getElementById('h-frost').value = H.house.frost;
+      const st = res.status;
+      const ovTxt = st.override ? ' (override' + (st.override.until ? ' until ' + new Date(st.override.until).toLocaleString([], {weekday:'short', hour:'2-digit', minute:'2-digit'}) : ' until cancelled') + ')' : '';
+      document.getElementById('h-now').innerHTML = st.override ? 'Now: <strong>' + PROF[st.override.profile] + '</strong>' + ovTxt :
+        !st.enabled ? 'Weekly plan is off — rooms keep their own setpoints. Overrides still apply.' :
+        'Now: <strong>' + PROF[st.effective] + '</strong>' + (st.since ? ' since ' + st.since : '') +
+        (st.next ? ' · next ' + PROF[st.next.profile] + ' ' + HDN[st.next.day].slice(0,3) + ' ' + st.next.time : '');
+      renderPlans(); renderRooms();
+    });
+  }
+  let hOpenPlan = null;
+  function plan(id) { return H.plans.find(p => p.id === (id || hOpenPlan || H.activePlan)) || H.plans[0]; }
+  function newPlan() {
+    const inp = document.getElementById('h-newname'); const name = inp.value.trim(); if (!name) return HomeyRef.alert('Enter a plan name');
+    const src = H.plans.find(p => p.id === H.activePlan) || H.plans[0]; const id = 'plan_' + Date.now();
+    H.plans.push({ id, name, days: JSON.parse(JSON.stringify(src.days)) });
+    inp.value = ''; hOpenPlan = id; hOpenDay = null; renderPlans();
+  }
+  function activatePlan(id) { H.activePlan = id; renderPlans(); }
+  function deletePlan(id) {
+    if (H.plans.length === 1) return HomeyRef.alert('Keep at least one plan');
+    HomeyRef.confirm('Delete this plan?', 'warning', (err, ok) => { if (!ok) return;
+      H.plans = H.plans.filter(p => p.id !== id); if (H.activePlan === id) H.activePlan = H.plans[0].id; if (hOpenPlan === id) hOpenPlan = null; renderPlans(); });
+  }
+  function renamePlan(id, name) { const p = H.plans.find(x => x.id === id); if (p && name.trim()) p.name = name.trim(); }
+  function togglePlan(id) { hOpenPlan = hOpenPlan === id ? null : id; hOpenDay = null; renderPlans(); }
+  function bar(points) {
+    const toMin = t => Number(t.slice(0,2))*60 + Number(t.slice(3,5));
+    const pts = [...points].sort((a,b) => a.time.localeCompare(b.time));
+    if (!pts.length) return '<div class="bar-h"></div>';
+    let html = '<div class="bar-h">';
+    const first = pts[0].time === '00:00' ? pts[0].profile : pts[pts.length-1].profile;
+    let prevMin = 0, prevProf = first;
+    for (const p of pts) { const m = toMin(p.time); if (m > prevMin) html += '<span class="p-' + prevProf + '" style="width:' + ((m-prevMin)/1440*100) + '%"></span>'; prevMin = m; prevProf = p.profile; }
+    html += '<span class="p-' + prevProf + '" style="width:' + ((1440-prevMin)/1440*100) + '%"></span></div>';
+    return html;
+  }
+  function renderPlans() {
+    const el = document.getElementById('h-plans'); el.innerHTML = '';
+    for (const p of H.plans) {
+      const open = hOpenPlan === p.id, active = H.activePlan === p.id;
+      const row = document.createElement('div'); row.className = 'row'; row.style.display = 'block';
+      let html = '<div style="display:flex; align-items:center; gap:8px">' +
+        '<div style="flex:1" onclick="togglePlan(\'' + p.id + '\')"><div class="t">' + esc(p.name) + (active ? '<span class="chip" style="background:#d9f2e3; color:#1e7a45">active</span>' : '') + '</div>' +
+        '<div class="d">' + (open ? 'tap a day below to edit' : 'tap to view') + '</div></div>' +
+        (active ? '' : '<button class="text" onclick="activatePlan(\'' + p.id + '\')">Activate</button>') +
+        '<span class="chev" onclick="togglePlan(\'' + p.id + '\')">' + (open ? '⌄' : '›') + '</span></div>';
+      if (!open) {
+        html += '<div style="display:flex; gap:2px; margin-top:6px">' + HDAYS.map(d => '<div style="flex:1">' + bar(p.days[d] || []) + '</div>').join('') + '</div>';
+      } else {
+        html += '<div style="display:flex; gap:6px; margin:8px 0"><input type="text" value="' + esc(p.name) + '" style="flex:1" onchange="renamePlan(\'' + p.id + '\', this.value)" placeholder="Plan name">' +
+          '<button class="text danger" onclick="deletePlan(\'' + p.id + '\')">Delete</button></div>';
+        for (const d of HDAYS) {
+          const pts = p.days[d] || [];
+          html += '<div style="padding:6px 0; border-top:0.5px solid #eee">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center" onclick="toggleDay(\'' + d + '\')"><span>' + HDN[d] + '</span><span class="muted" style="font-size:11px">' +
+            (pts.map(x => x.time + ' ' + PROF[x.profile]).join(' · ') || 'no switch points') + ' ›</span></div>' + bar(pts);
+          if (hOpenDay === d) {
+            html += '<div style="margin-top:6px">';
+            pts.forEach((x, i) => {
+              html += '<div class="pt"><input type="time" value="' + x.time + '" onchange="plan().days[\'' + d + '\'][' + i + '].time=this.value; renderPlans()">' +
+                '<select onchange="plan().days[\'' + d + '\'][' + i + '].profile=this.value; renderPlans()">' + Object.entries(PROF).map(([k,v]) => '<option value="' + k + '"' + (x.profile===k?' selected':'') + '>' + v + '</option>').join('') + '</select>' +
+                '<button class="text danger" onclick="plan().days[\'' + d + '\'].splice(' + i + ',1); renderPlans()">Remove</button></div>';
+            });
+            html += '<div class="pt" style="flex-wrap:wrap"><button class="text" onclick="plan().days[\'' + d + '\'].push({time:\'12:00\', profile:\'eco\'}); plan().days[\'' + d + '\'].sort((a,b)=>a.time.localeCompare(b.time)); renderPlans()">Add switch point</button>' +
+              '<span class="muted" style="margin-left:auto">Copy to:</span>' +
+              '<button class="text" onclick="copyDay(\'' + d + '\', [\'mon\',\'tue\',\'wed\',\'thu\',\'fri\'])">Mon–Fri</button>' +
+              '<button class="text" onclick="copyDay(\'' + d + '\', [\'sat\',\'sun\'])">Sat–Sun</button>' +
+              '<button class="text" onclick="copyDay(\'' + d + '\', HDAYS)">All</button></div></div>';
+          }
+          html += '</div>';
+        }
+      }
+      row.innerHTML = html; el.appendChild(row);
+    }
+  }
+  function toggleDay(d) { hOpenDay = hOpenDay === d ? null : d; renderPlans(); }
+  function copyDay(from, to) { for (const d of to) if (d !== from) plan().days[d] = JSON.parse(JSON.stringify(plan().days[from])); renderPlans(); }
+  function renderRooms() {
+    const el = document.getElementById('h-rooms');
+    el.innerHTML = '<div class="matrix"><span class="hd">Room</span><span class="hd" style="color:#d98a52">Comfort</span><span class="hd" style="color:#4fa88a">Eco</span><span class="hd" style="color:#5b74b8">Night</span><span class="hd">Plan</span></div>';
+    if (!hRooms.length) { el.innerHTML += '<div class="matrix"><span class="muted" style="grid-column:1/6">No thermostats added yet.</span></div>'; return; }
+    for (const r of hRooms) {
+      const cfg = H.rooms[r.serial];
+      el.innerHTML += '<div class="matrix"><span>' + esc(r.name) + (r.manual ? '<span class="chip" style="background:#ffe8c2">manual</span>' : '') + '</span>' +
+        '<input type="number" step="0.5" min="5" max="30" value="' + cfg.temps.comfort + '" onchange="H.rooms[\'' + r.serial + '\'].temps.comfort=Number(this.value)">' +
+        '<input type="number" step="0.5" min="5" max="30" value="' + cfg.temps.eco + '" onchange="H.rooms[\'' + r.serial + '\'].temps.eco=Number(this.value)">' +
+        '<input type="number" step="0.5" min="5" max="30" value="' + cfg.temps.night + '" onchange="H.rooms[\'' + r.serial + '\'].temps.night=Number(this.value)">' +
+        '<label class="sw" style="width:40px;height:24px"><input type="checkbox" ' + (cfg.follow !== false ? 'checked' : '') + ' onchange="H.rooms[\'' + r.serial + '\'].follow=this.checked"><span></span></label></div>';
+    }
+  }
+  function saveHeating() {
+    H.enabled = document.getElementById('h-enabled').checked;
+    H.house.away = Number(document.getElementById('h-away').value); H.house.frost = Number(document.getElementById('h-frost').value);
+    HomeyRef.api('POST', '/heating-save', { config: H }, (err) => { if (err) return HomeyRef.alert('Save failed: ' + err.message); loadHeating(); });
+  }
+  function applyOverride() {
+    HomeyRef.api('POST', '/heating-override', { profile: document.getElementById('h-ovp').value, duration: document.getElementById('h-ovd').value }, (err) => { if (err) return HomeyRef.alert(err.message); loadHeating(); });
+  }
+  function resumePlan() { HomeyRef.api('POST', '/heating-resume', {}, () => loadHeating()); }
+
+  /* ---------- log ---------- */
+  function loadLog() {
+    const serial = document.getElementById('filter').value;
+    HomeyRef.api('GET', '/log' + (serial ? '?device=' + encodeURIComponent(serial) : ''), null, (err, entries) => {
+      if (err) return;
+      const names = {}; for (const o of document.getElementById('filter').options) if (o.value) names[o.value] = o.textContent;
+      const fmt = (iso) => { const d = new Date(iso), p = (n) => String(n).padStart(2, '0');
+        return p(d.getDate()) + '.' + p(d.getMonth() + 1) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()); };
+      document.getElementById('log').innerHTML = entries.map(e =>
+        '<span class="' + e.level + '">' + fmt(e.ts) + '  ' + (e.serial ? '[' + esc(names[e.serial] || e.serial.slice(-8)) + '] ' : '[app] ') + esc(e.msg) + '</span>').join('\n');
+    });
+  }
+  function clearLog() { HomeyRef.api('POST', '/log/clear', null, () => loadLog()); }
+
+</script>
+</body>
+</html>

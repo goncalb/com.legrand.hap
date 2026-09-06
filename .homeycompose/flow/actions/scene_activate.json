@@ -1,0 +1,8 @@
+{
+  "title": { "en": "Activate a scene" },
+  "titleFormatted": { "en": "Activate scene [[scene]]" },
+  "hint": { "en": "Scenes are defined in the app settings (Scenes tab)." },
+  "args": [
+    { "type": "autocomplete", "name": "scene", "title": { "en": "Scene" }, "placeholder": { "en": "Choose a scene" } }
+  ]
+}

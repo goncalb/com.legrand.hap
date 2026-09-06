@@ -1,0 +1,44 @@
+{
+  "title": {
+    "en": "Set position and slat angle"
+  },
+  "titleFormatted": {
+    "en": "Set position to [[position]] and slats to [[angle]]"
+  },
+  "hint": {
+    "en": "Moves the shutter to the position first, then sets the slat angle once it has stopped."
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=shutter&capabilities=shutter_tilt"
+    },
+    {
+      "type": "range",
+      "name": "position",
+      "title": {
+        "en": "Position"
+      },
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "label": "%",
+      "labelMultiplier": 1,
+      "labelDecimals": 0
+    },
+    {
+      "type": "range",
+      "name": "angle",
+      "title": {
+        "en": "Slat angle"
+      },
+      "min": 0,
+      "max": 88,
+      "step": 22,
+      "label": "°",
+      "labelMultiplier": 1,
+      "labelDecimals": 0
+    }
+  ]
+}

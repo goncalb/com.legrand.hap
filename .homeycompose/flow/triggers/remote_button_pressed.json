@@ -1,0 +1,13 @@
+{
+  "title": { "en": "A button is pressed" },
+  "titleFormatted": { "en": "Button [[button]] is pressed" },
+  "args": [
+    { "type": "device", "name": "device", "filter": "driver_id=remote" },
+    { "type": "dropdown", "name": "button", "title": { "en": "Button" }, "values": [
+      { "id": "1", "title": { "en": "Button 1" } },
+      { "id": "2", "title": { "en": "Button 2" } },
+      { "id": "3", "title": { "en": "Button 3" } },
+      { "id": "4", "title": { "en": "Button 4" } }
+    ]}
+  ]
+}

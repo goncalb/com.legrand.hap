@@ -1,0 +1,92 @@
+<script type="text/javascript">
+  let selectedId = null;
+
+  function render(gateways) {
+    const el = document.getElementById('gateways');
+    el.innerHTML = '';
+    if (!gateways.length) {
+      el.innerHTML = showAll ? '<p>Searching for HomeKit devices…</p>' : '<p>Searching for Legrand / BTicino HomeKit devices…</p>';
+      return;
+    }
+    for (const gw of gateways) {
+      const div = document.createElement('div');
+      div.className = 'gw' + (selectedId === gw.id ? ' selected' : '');
+      div.innerHTML =
+        '<strong>' + gw.name + '</strong><br>' +
+        gw.address + ':' + gw.port + ' — ' + (gw.model || 'unknown model') + '<br>' +
+        (gw.pairedHere ? '<span class="ok">Paired with Homey</span>'
+          : gw.pairedElsewhere ? '<span class="warn">Already paired to another controller (reset its HomeKit pairing first)</span>'
+          : '<span class="ok">Ready to pair</span>');
+      div.onclick = () => { selectedId = gw.id; render(gateways); };
+      el.appendChild(div);
+    }
+  }
+
+  let showAll = false;
+
+  async function refresh() {
+    const gateways = await Homey.emit('list_gateways', { all: showAll });
+    render(gateways);
+    document.getElementById('toggleAll').style.display = showAll ? 'none' : 'block';
+  }
+
+  function toggleAll() { showAll = true; refresh(); }
+
+  function toggleManual() {
+    const b = document.getElementById('manualbox');
+    b.style.display = b.style.display === 'none' ? 'block' : 'none';
+    if (b.style.display === 'block') { selectedId = null; refresh(); }
+  }
+
+  async function pair() {
+    const pin = document.getElementById('pin').value.trim();
+    const manual = document.getElementById('manualbox').style.display !== 'none';
+    const id = manual ? document.getElementById('mid').value.trim().toUpperCase() : selectedId;
+    const address = manual ? document.getElementById('maddr').value.trim() : undefined;
+    if (!id) return Homey.alert(manual ? 'Enter the HomeKit id' : 'Select a device first');
+    if (manual && !address) return Homey.alert('Enter the device IP address');
+    if (!pin) return Homey.alert('Enter the 8-digit HomeKit setup code');
+    try {
+      Homey.showLoadingOverlay();
+      await Homey.emit('pair_gateway', { id, pin, address });
+      Homey.hideLoadingOverlay();
+      Homey.nextView();
+    } catch (err) {
+      Homey.hideLoadingOverlay();
+      Homey.alert('Pairing failed: ' + (err && err.message || err));
+    }
+  }
+
+  async function skipSetup() { Homey.nextView(); }
+  Homey.emit('is_paired').then((p) => { document.getElementById('skip').style.display = p ? 'inline-block' : 'none'; });
+
+  refresh();
+  setInterval(refresh, 3000);
+</script>
+
+<style>
+  .gw { border: 1px solid #ccc; border-radius: 8px; padding: 10px; margin: 6px 0; cursor: pointer; }
+  .gw.selected { border-color: #e0004d; background: #fff0f5; }
+  .ok { color: green; } .warn { color: #b36b00; }
+  #pin { font-size: 1.2em; width: 100%; margin: 10px 0; padding: 8px; box-sizing: border-box; }
+  button { padding: 10px 18px; }
+</style>
+
+<h2>Connect a Legrand / BTicino HomeKit device</h2>
+<p>Select the device (gateway or Smarther thermostat) and enter its HomeKit setup code (on the label or in the Home + Control app).</p>
+<div id="gateways"></div>
+<a id="toggleAll" href="#" onclick="toggleAll(); return false;" style="font-size: 12px;">My gateway isn't listed — show all HomeKit bridges</a>
+<a href="#" onclick="toggleManual(); return false;" style="font-size: 12px; display:block; margin: 6px 0;">Device not listed? Pair by HomeKit id and IP address</a>
+<div id="manualbox" style="display:none; margin: 6px 0 10px;">
+  <input id="mid" type="text" placeholder="HomeKit id, e.g. 00:91:FF:AC:59:AD" style="width:100%; box-sizing:border-box; margin-bottom:6px; padding:8px;" />
+  <input id="maddr" type="text" placeholder="IP address, e.g. 192.168.1.80" style="width:100%; box-sizing:border-box; padding:8px;" />
+  <p style="font-size:11px; color:#666; margin:4px 0 0;">Get both from the hap-probe "discover" output on a computer in the same network.</p>
+</div>
+<input id="pin" type="text" placeholder="XXX-XX-XXX" inputmode="numeric" />
+<p style="font-size:12px; color:#666; margin:4px 0 10px;">
+  The setup code is printed on the gateway's label, or shown in the Home + Control app under the gateway's HomeKit section.
+  If the gateway shows as <em>already paired</em>, remove it from Apple Home first (Home settings → Hubs &amp; Bridges) — a HomeKit bridge accepts a single controller.
+  More help: Homey → Settings → Apps → this app → Gateway → Help.
+</p>
+<button onclick="pair()">Pair</button>
+<button id="skip" onclick="skipSetup()" style="display:none; margin-left:8px">Skip — use already paired devices</button>

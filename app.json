@@ -1,0 +1,1062 @@
+{
+  "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
+  "id": "com.legrand.hap",
+  "version": "0.8.1",
+  "compatibility": ">=12.0.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "Legrand with Netatmo (Local)"
+  },
+  "description": {
+    "en": "Local control of Legrand with Netatmo and BTicino devices (gateway, Smarther thermostat) through the HomeKit Accessory Protocol. No cloud required."
+  },
+  "category": [
+    "lights"
+  ],
+  "brandColor": "#DA5046",
+  "permissions": [],
+  "author": {
+    "name": "Gonçalo"
+  },
+  "api": {
+    "getLog": {
+      "method": "GET",
+      "path": "/log"
+    },
+    "clearLog": {
+      "method": "POST",
+      "path": "/log/clear"
+    },
+    "getDevices": {
+      "method": "GET",
+      "path": "/devices"
+    },
+    "identify": {
+      "method": "POST",
+      "path": "/identify"
+    },
+    "refresh": {
+      "method": "POST",
+      "path": "/refresh"
+    },
+    "setName": {
+      "method": "POST",
+      "path": "/device-name"
+    },
+    "listEndpoints": {
+      "method": "GET",
+      "path": "/endpoints"
+    },
+    "importPairing": {
+      "method": "POST",
+      "path": "/endpoint-import"
+    },
+    "pairDevice": {
+      "method": "POST",
+      "path": "/endpoint-pair"
+    },
+    "removeEndpoint": {
+      "method": "POST",
+      "path": "/endpoint-remove"
+    },
+    "setEndpointAddress": {
+      "method": "POST",
+      "path": "/endpoint-address"
+    },
+    "captureScene": {
+      "method": "GET",
+      "path": "/scene-capture"
+    },
+    "runScene": {
+      "method": "POST",
+      "path": "/scene-run"
+    },
+    "getScenes": {
+      "method": "GET",
+      "path": "/scene-list"
+    },
+    "saveScenes": {
+      "method": "POST",
+      "path": "/scene-save"
+    },
+    "getHeating": {
+      "method": "GET",
+      "path": "/heating"
+    },
+    "saveHeating": {
+      "method": "POST",
+      "path": "/heating-save"
+    },
+    "heatingOverride": {
+      "method": "POST",
+      "path": "/heating-override"
+    },
+    "heatingResume": {
+      "method": "POST",
+      "path": "/heating-resume"
+    }
+  },
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "tags": {
+    "en": [
+      "legrand",
+      "netatmo",
+      "bticino",
+      "homekit",
+      "hap",
+      "local",
+      "shutter",
+      "blinds"
+    ]
+  },
+  "source": "https://github.com/goncalb/com.legrand.hap",
+  "license": "GPL-3.0",
+  "flow": {
+    "triggers": [
+      {
+        "title": {
+          "en": "Heating profile changed"
+        },
+        "tokens": [
+          {
+            "name": "profile",
+            "type": "string",
+            "title": {
+              "en": "Profile"
+            },
+            "example": "comfort"
+          },
+          {
+            "name": "previous",
+            "type": "string",
+            "title": {
+              "en": "Previous profile"
+            },
+            "example": "eco"
+          }
+        ],
+        "args": [],
+        "id": "heating_profile_changed"
+      },
+      {
+        "title": {
+          "en": "A button is pressed"
+        },
+        "titleFormatted": {
+          "en": "Button [[button]] is pressed"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=remote"
+          },
+          {
+            "type": "dropdown",
+            "name": "button",
+            "title": {
+              "en": "Button"
+            },
+            "values": [
+              {
+                "id": "1",
+                "title": {
+                  "en": "Button 1"
+                }
+              },
+              {
+                "id": "2",
+                "title": {
+                  "en": "Button 2"
+                }
+              },
+              {
+                "id": "3",
+                "title": {
+                  "en": "Button 3"
+                }
+              },
+              {
+                "id": "4",
+                "title": {
+                  "en": "Button 4"
+                }
+              }
+            ]
+          }
+        ],
+        "id": "remote_button_pressed"
+      },
+      {
+        "title": {
+          "en": "Heating started or stopped"
+        },
+        "titleFormatted": {
+          "en": "Heating [[state]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=thermostat"
+          },
+          {
+            "type": "dropdown",
+            "name": "state",
+            "title": {
+              "en": "State"
+            },
+            "values": [
+              {
+                "id": "on",
+                "title": {
+                  "en": "started"
+                }
+              },
+              {
+                "id": "off",
+                "title": {
+                  "en": "stopped"
+                }
+              }
+            ]
+          }
+        ],
+        "id": "thermostat_heating_changed"
+      }
+    ],
+    "conditions": [
+      {
+        "title": {
+          "en": "Heating profile !{{is|isn't}}"
+        },
+        "titleFormatted": {
+          "en": "Heating profile !{{is|isn't}} [[profile]]"
+        },
+        "args": [
+          {
+            "type": "dropdown",
+            "name": "profile",
+            "title": {
+              "en": "Profile"
+            },
+            "values": [
+              {
+                "id": "comfort",
+                "title": {
+                  "en": "Comfort"
+                }
+              },
+              {
+                "id": "eco",
+                "title": {
+                  "en": "Eco"
+                }
+              },
+              {
+                "id": "night",
+                "title": {
+                  "en": "Night"
+                }
+              },
+              {
+                "id": "away",
+                "title": {
+                  "en": "Away"
+                }
+              },
+              {
+                "id": "frost",
+                "title": {
+                  "en": "Frost guard"
+                }
+              }
+            ]
+          }
+        ],
+        "id": "heating_profile_is"
+      },
+      {
+        "title": {
+          "en": "Shutter !{{is|isn't}} moving"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=shutter"
+          }
+        ],
+        "id": "shutter_is_moving"
+      },
+      {
+        "title": {
+          "en": "Thermostat !{{is|isn't}} heating"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=thermostat"
+          }
+        ],
+        "id": "thermostat_is_heating"
+      }
+    ],
+    "actions": [
+      {
+        "title": {
+          "en": "Resume heating plan"
+        },
+        "hint": {
+          "en": "Cancels any override and manual room holds; the plan takes over again."
+        },
+        "args": [],
+        "id": "heating_resume"
+      },
+      {
+        "title": {
+          "en": "Set heating profile"
+        },
+        "titleFormatted": {
+          "en": "Set heating to [[profile]] [[duration]]"
+        },
+        "hint": {
+          "en": "Overrides the house heating plan for all rooms that follow it."
+        },
+        "args": [
+          {
+            "type": "dropdown",
+            "name": "profile",
+            "title": {
+              "en": "Profile"
+            },
+            "values": [
+              {
+                "id": "comfort",
+                "title": {
+                  "en": "Comfort"
+                }
+              },
+              {
+                "id": "eco",
+                "title": {
+                  "en": "Eco"
+                }
+              },
+              {
+                "id": "night",
+                "title": {
+                  "en": "Night"
+                }
+              },
+              {
+                "id": "away",
+                "title": {
+                  "en": "Away"
+                }
+              },
+              {
+                "id": "frost",
+                "title": {
+                  "en": "Frost guard"
+                }
+              }
+            ]
+          },
+          {
+            "type": "dropdown",
+            "name": "duration",
+            "title": {
+              "en": "Duration"
+            },
+            "values": [
+              {
+                "id": "next",
+                "title": {
+                  "en": "until the next switch point"
+                }
+              },
+              {
+                "id": "1",
+                "title": {
+                  "en": "for 1 hour"
+                }
+              },
+              {
+                "id": "2",
+                "title": {
+                  "en": "for 2 hours"
+                }
+              },
+              {
+                "id": "4",
+                "title": {
+                  "en": "for 4 hours"
+                }
+              },
+              {
+                "id": "8",
+                "title": {
+                  "en": "for 8 hours"
+                }
+              },
+              {
+                "id": "24",
+                "title": {
+                  "en": "for 24 hours"
+                }
+              },
+              {
+                "id": "forever",
+                "title": {
+                  "en": "until cancelled"
+                }
+              }
+            ]
+          }
+        ],
+        "id": "heating_set_profile"
+      },
+      {
+        "title": {
+          "en": "Activate a scene"
+        },
+        "titleFormatted": {
+          "en": "Activate scene [[scene]]"
+        },
+        "hint": {
+          "en": "Scenes are defined in the app settings (Scenes tab)."
+        },
+        "args": [
+          {
+            "type": "autocomplete",
+            "name": "scene",
+            "title": {
+              "en": "Scene"
+            },
+            "placeholder": {
+              "en": "Choose a scene"
+            }
+          }
+        ],
+        "id": "scene_activate"
+      },
+      {
+        "title": {
+          "en": "Set slat angle"
+        },
+        "titleFormatted": {
+          "en": "Set slats to [[angle]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=shutter&capabilities=shutter_tilt"
+          },
+          {
+            "type": "range",
+            "name": "angle",
+            "title": {
+              "en": "Slat angle"
+            },
+            "min": 0,
+            "max": 88,
+            "step": 22,
+            "label": "°",
+            "labelMultiplier": 1,
+            "labelDecimals": 0
+          }
+        ],
+        "id": "shutter_set_tilt"
+      },
+      {
+        "title": {
+          "en": "Set position and slat angle"
+        },
+        "titleFormatted": {
+          "en": "Set position to [[position]] and slats to [[angle]]"
+        },
+        "hint": {
+          "en": "Moves the shutter to the position first, then sets the slat angle once it has stopped."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=shutter&capabilities=shutter_tilt"
+          },
+          {
+            "type": "range",
+            "name": "position",
+            "title": {
+              "en": "Position"
+            },
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "label": "%",
+            "labelMultiplier": 1,
+            "labelDecimals": 0
+          },
+          {
+            "type": "range",
+            "name": "angle",
+            "title": {
+              "en": "Slat angle"
+            },
+            "min": 0,
+            "max": 88,
+            "step": 22,
+            "label": "°",
+            "labelMultiplier": 1,
+            "labelDecimals": 0
+          }
+        ],
+        "id": "shutter_set_tilt_and_position"
+      }
+    ]
+  },
+  "drivers": [
+    {
+      "name": {
+        "en": "Light"
+      },
+      "class": "light",
+      "capabilities": [
+        "onoff",
+        "button.identify",
+        "button.rebuild"
+      ],
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "images": {
+        "small": "/drivers/light/assets/images/small.png",
+        "large": "/drivers/light/assets/images/large.png"
+      },
+      "pair": [
+        {
+          "id": "setup"
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "icons"
+          }
+        },
+        {
+          "id": "icons"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Device information"
+          },
+          "children": [
+            {
+              "id": "serial",
+              "type": "label",
+              "label": {
+                "en": "Serial number"
+              },
+              "value": ""
+            },
+            {
+              "id": "model",
+              "type": "label",
+              "label": {
+                "en": "Model"
+              },
+              "value": ""
+            },
+            {
+              "id": "firmware",
+              "type": "label",
+              "label": {
+                "en": "Firmware"
+              },
+              "value": ""
+            }
+          ]
+        }
+      ],
+      "capabilitiesOptions": {
+        "button.identify": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Blink the module"
+          },
+          "desc": {
+            "en": "The module's LED will blink so you can identify it."
+          }
+        },
+        "button.rebuild": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Rebuild device capabilities"
+          },
+          "desc": {
+            "en": "Re-creates this device's controls from the gateway data. Use if the device looks empty or out of date after an app update."
+          }
+        }
+      },
+      "energy": {
+        "approximation": {
+          "usageOn": 8,
+          "usageOff": 0
+        }
+      },
+      "id": "light"
+    },
+    {
+      "name": {
+        "en": "Wireless remote"
+      },
+      "class": "button",
+      "capabilities": [
+        "alarm_battery",
+        "button.identify",
+        "button.rebuild"
+      ],
+      "energy": {
+        "batteries": [
+          "OTHER"
+        ]
+      },
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "images": {
+        "small": "/drivers/remote/assets/images/small.png",
+        "large": "/drivers/remote/assets/images/large.png"
+      },
+      "pair": [
+        {
+          "id": "setup"
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Device information"
+          },
+          "children": [
+            {
+              "id": "serial",
+              "type": "label",
+              "label": {
+                "en": "Serial number"
+              },
+              "value": ""
+            },
+            {
+              "id": "model",
+              "type": "label",
+              "label": {
+                "en": "Model"
+              },
+              "value": ""
+            },
+            {
+              "id": "firmware",
+              "type": "label",
+              "label": {
+                "en": "Firmware"
+              },
+              "value": ""
+            }
+          ]
+        }
+      ],
+      "capabilitiesOptions": {
+        "button.identify": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Blink the module"
+          },
+          "desc": {
+            "en": "The module's LED will blink so you can identify it."
+          }
+        },
+        "button.rebuild": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Rebuild device capabilities"
+          },
+          "desc": {
+            "en": "Re-creates this device's controls from the gateway data. Use if the device looks empty or out of date after an app update."
+          }
+        }
+      },
+      "id": "remote"
+    },
+    {
+      "name": {
+        "en": "Shutter"
+      },
+      "class": "windowcoverings",
+      "capabilities": [
+        "shutter_status",
+        "windowcoverings_set",
+        "shutter_moving",
+        "button.identify",
+        "button.rebuild"
+      ],
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "images": {
+        "small": "/drivers/shutter/assets/images/small.png",
+        "large": "/drivers/shutter/assets/images/large.png"
+      },
+      "pair": [
+        {
+          "id": "setup"
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Device information"
+          },
+          "children": [
+            {
+              "id": "serial",
+              "type": "label",
+              "label": {
+                "en": "Serial number"
+              },
+              "value": ""
+            },
+            {
+              "id": "model",
+              "type": "label",
+              "label": {
+                "en": "Model"
+              },
+              "value": ""
+            },
+            {
+              "id": "firmware",
+              "type": "label",
+              "label": {
+                "en": "Firmware"
+              },
+              "value": ""
+            },
+            {
+              "id": "tilt",
+              "type": "label",
+              "label": {
+                "en": "Slat tilt (Orientable mode)"
+              },
+              "value": ""
+            }
+          ]
+        }
+      ],
+      "capabilitiesOptions": {
+        "windowcoverings_tilt_set": {
+          "uiComponent": null
+        },
+        "button.identify": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Blink the wall module"
+          },
+          "desc": {
+            "en": "The module's LED will blink so you can identify it."
+          }
+        },
+        "shutter_status": {
+          "uiComponent": null,
+          "title": {
+            "en": "Status"
+          }
+        },
+        "button.rebuild": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Rebuild device capabilities"
+          },
+          "desc": {
+            "en": "Re-creates this device's controls from the gateway data. Use if the device looks empty or out of date after an app update."
+          }
+        }
+      },
+      "id": "shutter"
+    },
+    {
+      "name": {
+        "en": "Smarther thermostat"
+      },
+      "class": "thermostat",
+      "capabilities": [
+        "thermostat_status",
+        "measure_temperature",
+        "target_temperature",
+        "thermostat_heating",
+        "thermostat_mode",
+        "measure_humidity",
+        "button.identify",
+        "button.rebuild"
+      ],
+      "capabilitiesOptions": {
+        "target_temperature": {
+          "min": 5,
+          "max": 30,
+          "step": 0.5
+        },
+        "thermostat_mode": {
+          "values": [
+            {
+              "id": "plan",
+              "title": {
+                "en": "Schedule"
+              }
+            },
+            {
+              "id": "heat",
+              "title": {
+                "en": "Manual"
+              }
+            },
+            {
+              "id": "frost",
+              "title": {
+                "en": "Frost guard"
+              }
+            },
+            {
+              "id": "off",
+              "title": {
+                "en": "Off"
+              }
+            }
+          ]
+        },
+        "button.identify": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Blink the thermostat"
+          }
+        },
+        "button.rebuild": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Rebuild device capabilities"
+          },
+          "desc": {
+            "en": "Re-creates this device's controls from the HomeKit data."
+          }
+        },
+        "thermostat_status": {
+          "uiComponent": null,
+          "title": {
+            "en": "Status"
+          }
+        }
+      },
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "images": {
+        "small": "/drivers/thermostat/assets/images/small.png",
+        "large": "/drivers/thermostat/assets/images/large.png"
+      },
+      "pair": [
+        {
+          "id": "setup"
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Device information"
+          },
+          "children": [
+            {
+              "id": "serial",
+              "type": "label",
+              "label": {
+                "en": "Serial number"
+              },
+              "value": ""
+            },
+            {
+              "id": "model",
+              "type": "label",
+              "label": {
+                "en": "Model"
+              },
+              "value": ""
+            },
+            {
+              "id": "firmware",
+              "type": "label",
+              "label": {
+                "en": "Firmware"
+              },
+              "value": ""
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Frost guard"
+          },
+          "children": [
+            {
+              "id": "frost_temp",
+              "type": "number",
+              "label": {
+                "en": "Frost guard temperature (°C)"
+              },
+              "value": 7,
+              "min": 5,
+              "max": 15,
+              "step": 0.5,
+              "hint": {
+                "en": "Setpoint used by the Frost guard mode. When the thermostat's setpoint equals this value, the mode shows as Frost guard."
+              }
+            }
+          ]
+        }
+      ],
+      "id": "thermostat"
+    }
+  ],
+  "capabilities": {
+    "shutter_moving": {
+      "type": "boolean",
+      "title": {
+        "en": "Moving"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "insights": true,
+      "icon": "/assets/cap_moving.svg"
+    },
+    "shutter_status": {
+      "type": "string",
+      "title": {
+        "en": "Status"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": null,
+      "insights": false
+    },
+    "shutter_tilt": {
+      "type": "number",
+      "title": {
+        "en": "Slat angle"
+      },
+      "units": {
+        "en": "°"
+      },
+      "min": 0,
+      "max": 90,
+      "step": 1,
+      "decimals": 0,
+      "getable": true,
+      "setable": true,
+      "uiComponent": "slider",
+      "insights": false,
+      "icon": "/assets/cap_tilt.svg"
+    },
+    "thermostat_heating": {
+      "type": "boolean",
+      "title": {
+        "en": "Heating"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "insights": true,
+      "icon": "/assets/cap_heating.svg"
+    },
+    "thermostat_status": {
+      "type": "string",
+      "title": {
+        "en": "Status"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": null,
+      "insights": false
+    }
+  },
+  "discovery": {
+    "hap": {
+      "type": "mdns-sd",
+      "mdns-sd": {
+        "name": "hap",
+        "protocol": "tcp"
+      },
+      "id": "{{txt.id}}"
+    }
+  }
+}

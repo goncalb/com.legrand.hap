@@ -1,0 +1,14 @@
+{
+  "type": "number",
+  "title": { "en": "Slat angle" },
+  "units": { "en": "°" },
+  "min": 0,
+  "max": 90,
+  "step": 1,
+  "decimals": 0,
+  "getable": true,
+  "setable": true,
+  "uiComponent": "slider",
+  "insights": false,
+  "icon": "/assets/cap_tilt.svg"
+}

@@ -1,0 +1,8 @@
+{
+  "title": { "en": "Heating profile changed" },
+  "tokens": [
+    { "name": "profile", "type": "string", "title": { "en": "Profile" }, "example": "comfort" },
+    { "name": "previous", "type": "string", "title": { "en": "Previous profile" }, "example": "eco" }
+  ],
+  "args": []
+}

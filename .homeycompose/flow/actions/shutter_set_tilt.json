@@ -1,0 +1,28 @@
+{
+  "title": {
+    "en": "Set slat angle"
+  },
+  "titleFormatted": {
+    "en": "Set slats to [[angle]]"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=shutter&capabilities=shutter_tilt"
+    },
+    {
+      "type": "range",
+      "name": "angle",
+      "title": {
+        "en": "Slat angle"
+      },
+      "min": 0,
+      "max": 88,
+      "step": 22,
+      "label": "°",
+      "labelMultiplier": 1,
+      "labelDecimals": 0
+    }
+  ]
+}

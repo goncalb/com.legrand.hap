@@ -1,0 +1,103 @@
+{
+  "title": {
+    "en": "Set heating profile"
+  },
+  "titleFormatted": {
+    "en": "Set heating to [[profile]] [[duration]]"
+  },
+  "hint": {
+    "en": "Overrides the house heating plan for all rooms that follow it."
+  },
+  "args": [
+    {
+      "type": "dropdown",
+      "name": "profile",
+      "title": {
+        "en": "Profile"
+      },
+      "values": [
+        {
+          "id": "comfort",
+          "title": {
+            "en": "Comfort"
+          }
+        },
+        {
+          "id": "eco",
+          "title": {
+            "en": "Eco"
+          }
+        },
+        {
+          "id": "night",
+          "title": {
+            "en": "Night"
+          }
+        },
+        {
+          "id": "away",
+          "title": {
+            "en": "Away"
+          }
+        },
+        {
+          "id": "frost",
+          "title": {
+            "en": "Frost guard"
+          }
+        }
+      ]
+    },
+    {
+      "type": "dropdown",
+      "name": "duration",
+      "title": {
+        "en": "Duration"
+      },
+      "values": [
+        {
+          "id": "next",
+          "title": {
+            "en": "until the next switch point"
+          }
+        },
+        {
+          "id": "1",
+          "title": {
+            "en": "for 1 hour"
+          }
+        },
+        {
+          "id": "2",
+          "title": {
+            "en": "for 2 hours"
+          }
+        },
+        {
+          "id": "4",
+          "title": {
+            "en": "for 4 hours"
+          }
+        },
+        {
+          "id": "8",
+          "title": {
+            "en": "for 8 hours"
+          }
+        },
+        {
+          "id": "24",
+          "title": {
+            "en": "for 24 hours"
+          }
+        },
+        {
+          "id": "forever",
+          "title": {
+            "en": "until cancelled"
+          }
+        }
+      ]
+    }
+  ]
+}

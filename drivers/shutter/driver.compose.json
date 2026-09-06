@@ -1,0 +1,110 @@
+{
+  "name": {
+    "en": "Shutter"
+  },
+  "class": "windowcoverings",
+  "capabilities": [
+    "shutter_status",
+    "windowcoverings_set",
+    "shutter_moving",
+    "button.identify",
+    "button.rebuild"
+  ],
+  "platforms": [
+    "local"
+  ],
+  "connectivity": [
+    "lan"
+  ],
+  "images": {
+    "small": "{{driverAssetsPath}}/images/small.png",
+    "large": "{{driverAssetsPath}}/images/large.png"
+  },
+  "pair": [
+    {
+      "id": "setup"
+    },
+    {
+      "id": "list_devices",
+      "template": "list_devices",
+      "navigation": {
+        "next": "add_devices"
+      }
+    },
+    {
+      "id": "add_devices",
+      "template": "add_devices"
+    }
+  ],
+  "settings": [
+    {
+      "type": "group",
+      "label": {
+        "en": "Device information"
+      },
+      "children": [
+        {
+          "id": "serial",
+          "type": "label",
+          "label": {
+            "en": "Serial number"
+          },
+          "value": ""
+        },
+        {
+          "id": "model",
+          "type": "label",
+          "label": {
+            "en": "Model"
+          },
+          "value": ""
+        },
+        {
+          "id": "firmware",
+          "type": "label",
+          "label": {
+            "en": "Firmware"
+          },
+          "value": ""
+        },
+        {
+          "id": "tilt",
+          "type": "label",
+          "label": {
+            "en": "Slat tilt (Orientable mode)"
+          },
+          "value": ""
+        }
+      ]
+    }
+  ],
+  "capabilitiesOptions": {
+    "windowcoverings_tilt_set": {
+      "uiComponent": null
+    },
+    "button.identify": {
+      "maintenanceAction": true,
+      "title": {
+        "en": "Blink the wall module"
+      },
+      "desc": {
+        "en": "The module's LED will blink so you can identify it."
+      }
+    },
+    "shutter_status": {
+      "uiComponent": null,
+      "title": {
+        "en": "Status"
+      }
+    },
+    "button.rebuild": {
+      "maintenanceAction": true,
+      "title": {
+        "en": "Rebuild device capabilities"
+      },
+      "desc": {
+        "en": "Re-creates this device's controls from the gateway data. Use if the device looks empty or out of date after an app update."
+      }
+    }
+  }
+}
