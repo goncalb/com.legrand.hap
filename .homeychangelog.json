@@ -1,4 +1,7 @@
 {
+  "0.9.14": {
+    "en": "Shutter travel times: manual override, reset action, smarter learning for orientable shutters."
+  },
   "0.9.13": {
     "en": "Widgets: readable dark theme. Better shutter travel-time learning."
   },

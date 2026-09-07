@@ -57,7 +57,7 @@ class ShutterDevice extends HapDevice {
     const desired = ['shutter_status', 'windowcoverings_set'];
     if (hasTilt) desired.push('shutter_tilt');
     if (hasTilt && exposeStd) desired.push('windowcoverings_tilt_set');
-    desired.push('shutter_moving', 'button.identify', 'button.rebuild');
+    desired.push('shutter_moving', 'button.identify', 'button.rebuild', 'button.reset_travel');
     await this.ensureCapabilities(desired);
 
     if (hasTilt) {
@@ -86,6 +86,7 @@ class ShutterDevice extends HapDevice {
     }
     this._listen('button.identify', async () => this.hap.identify(this.serial));
     this._listen('button.rebuild', async () => this.rebuild());
+    this._listen('button.reset_travel', async () => this.resetTravel());
 
     if (acc.chars.CurrentPosition) await this._setPosition(acc.chars.CurrentPosition.value || 0);
     if (hasTilt && acc.chars.CurrentHorizontalTiltAngle) await this._setTilt(acc.chars.CurrentHorizontalTiltAngle.value || 0);
@@ -141,9 +142,13 @@ class ShutterDevice extends HapDevice {
   async _learnTravel(endPos) {
     const run = this._runStart; this._runStart = null;
     if (!run || run.pos == null || endPos == null || !run.dir) return;
+    if (Number(this.getSetting(`travel_${run.dir}_manual`)) > 0) return;   // manual time set: don't learn
     const delta = Math.abs(endPos - run.pos);
     const secs = (Date.now() - run.t) / 1000;
     if (delta < 20 || secs < 2) return;                       // too short to be a reliable sample
+    // Orientable shutters run a slat phase at the fully closed end, and the gateway only reports the
+    // position once everything has stopped — so a run ending at 0 % cannot be timed. Skip it.
+    if (this.hasTilt() && endPos === 0) { this.log(`travel ${run.dir}: run ended fully closed on an orientable shutter — not used for learning`); return; }
     const full = Math.round((secs / delta) * 100 * 10) / 10;
     const key = `travel_${run.dir}`;
     const samples = (this.getStoreValue(key) || []).slice(-4); samples.push(full);
@@ -153,10 +158,24 @@ class ShutterDevice extends HapDevice {
     await this.setSettings({ [key]: `${avg} s (${samples.length} runs)` }).catch(() => {});
   }
 
-  /** Learned full-travel time in seconds for a direction, or null if not learned yet. */
+  /** Full-travel time in seconds for a direction: manual setting if set, else learned average, else null. */
   travelTime(dir) {
+    const manual = Number(this.getSetting(`travel_${dir}_manual`));
+    if (manual > 0) return manual;
     const samples = this.getStoreValue(`travel_${dir}`) || [];
     return samples.length ? Math.round(samples.reduce((a, b) => a + b, 0) / samples.length * 10) / 10 : null;
+  }
+
+  async resetTravel() {
+    await this.unsetStoreValue('travel_up').catch(() => {});
+    await this.unsetStoreValue('travel_down').catch(() => {});
+    await this.setSettings({ travel_up: 'not learned yet', travel_down: 'not learned yet' }).catch(() => {});
+    this.log('learned travel times reset');
+    return true;
+  }
+
+  async onSettings({ changedKeys }) {
+    if (changedKeys.some((k) => k.startsWith('travel_'))) this.log('travel time settings changed');
   }
 
   async onChar(type, value) {

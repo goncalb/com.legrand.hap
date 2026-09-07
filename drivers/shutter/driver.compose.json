@@ -8,7 +8,8 @@
     "windowcoverings_set",
     "shutter_moving",
     "button.identify",
-    "button.rebuild"
+    "button.rebuild",
+    "button.reset_travel"
   ],
   "platforms": [
     "local"
@@ -87,7 +88,7 @@
           "id": "travel_up",
           "type": "label",
           "label": {
-            "en": "Full travel up (0 → 100 %)"
+            "en": "Learned: full travel up"
           },
           "value": "not learned yet"
         },
@@ -95,9 +96,38 @@
           "id": "travel_down",
           "type": "label",
           "label": {
-            "en": "Full travel down (100 → 0 %)"
+            "en": "Learned: full travel down"
           },
           "value": "not learned yet"
+        },
+        {
+          "id": "travel_up_manual",
+          "type": "number",
+          "label": {
+            "en": "Manual: full travel up (s)"
+          },
+          "value": 0,
+          "min": 0,
+          "max": 300,
+          "units": {
+            "en": "s"
+          },
+          "hint": {
+            "en": "0 = use the learned value. Orientable shutters cannot be timed on a full close because the gateway reports the position only after the slats have re-opened — set the time here if the learned value looks wrong."
+          }
+        },
+        {
+          "id": "travel_down_manual",
+          "type": "number",
+          "label": {
+            "en": "Manual: full travel down (s)"
+          },
+          "value": 0,
+          "min": 0,
+          "max": 300,
+          "units": {
+            "en": "s"
+          }
         }
       ]
     }
@@ -128,6 +158,15 @@
       },
       "desc": {
         "en": "Re-creates this device's controls from the gateway data. Use if the device looks empty or out of date after an app update."
+      }
+    },
+    "button.reset_travel": {
+      "maintenanceAction": true,
+      "title": {
+        "en": "Reset learned travel times"
+      },
+      "desc": {
+        "en": "Forget the measured travel times (e.g. after a motor replacement). Learning starts again from the next runs."
       }
     }
   }

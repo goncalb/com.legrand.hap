@@ -2,6 +2,13 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.9.14] — 2026-09-07
+
+### Changed
+- Shutter travel-time learning skips runs that end fully closed on orientable shutters (the gateway reports the
+  position only after the slat phase, so such runs cannot be timed). Manual travel-time settings per direction
+  override learning; new "Reset learned travel times" maintenance action.
+
 ## [0.9.13] — 2026-09-07
 
 ### Changed
