@@ -76,6 +76,30 @@
           "value": ""
         }
       ]
+    },
+    {
+      "type": "group",
+      "label": {
+        "en": "Learned travel times"
+      },
+      "children": [
+        {
+          "id": "travel_up",
+          "type": "label",
+          "label": {
+            "en": "Full travel up (0 → 100 %)"
+          },
+          "value": "not learned yet"
+        },
+        {
+          "id": "travel_down",
+          "type": "label",
+          "label": {
+            "en": "Full travel down (100 → 0 %)"
+          },
+          "value": "not learned yet"
+        }
+      ]
     }
   ],
   "capabilitiesOptions": {

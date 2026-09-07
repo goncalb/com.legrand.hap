@@ -2,6 +2,21 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.9.13] — 2026-09-07
+
+### Changed
+- Widgets: readable dark theme — cards lighter than the panel, brand colour lifted for contrast, light-grey values.
+- Shutter travel-time learning now measures to "position reached" instead of "motor stopped", so the slat
+  re-opening phase of orientable shutters no longer inflates the time; default pace 60 s until learned.
+
+## [0.9.12] — 2026-09-07
+
+### Added
+- Shutters learn their real travel times: every completed run of 20 % or more is timed and kept as a
+  rolling average per direction (up / down), shown in the device's Advanced settings. The Shutters widget
+  animates each shutter at its own learned pace — one precise pass to the target, holding until the motor
+  reports stopped (looping fallback until a shutter has been learned).
+
 ## [0.9.11] — 2026-09-07
 
 ### Added

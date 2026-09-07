@@ -1,25 +1,30 @@
 <!doctype html>
 <html><head><meta charset="utf-8"/>
 <style>
+  /* dark theme (variant B): cards lighter than the panel, brand lifted for contrast */
+  :root { --lg-card: var(--homey-color-mono-000, #fff); --lg-border: var(--homey-color-mono-200, #e3e3e3); --lg-brand: #DA5046; --lg-text: var(--homey-text-color, #1c1c1e); --lg-muted: var(--homey-text-color-light, #8a8a8e); --lg-frame: #8a8a8e; --lg-sel: #fdf1ef; }
+  @media (prefers-color-scheme: dark) {
+    :root { --lg-card: #3a3a3c; --lg-border: #48484a; --lg-brand: #f0716a; --lg-text: #f2f2f7; --lg-muted: #c7c7cc; --lg-frame: #c7c7cc; --lg-sel: #4a3230; }
+  }
   html, body { margin: 0; overflow: hidden; }
-  body { font-family: var(--homey-font-family-default, -apple-system, sans-serif); color: var(--homey-text-color, #1c1c1e); font-size: 12px; }
+  body { font-family: var(--homey-font-family-default, -apple-system, sans-serif); color: var(--lg-text); font-size: 12px; }
   .wrap { padding: 8px 10px; }
   .hd { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .hd .t { font-weight: 600; font-size: 14px; color: #DA5046; }
-  .hd .s { color: var(--homey-text-color-light, #8a8a8e); font-size: 11px; }
+  .hd .t { font-weight: 600; font-size: 14px; color: var(--lg-brand); }
+  .hd .s { color: var(--lg-muted); font-size: 11px; }
   .chips { display: flex; gap: 5px; margin-bottom: 6px; }
-  .chip { flex: 1; text-align: center; padding: 5px 0; border-radius: 14px; border: 0.5px solid var(--homey-color-mono-300, #ccc); font-size: 11px; cursor: pointer; background: var(--homey-color-mono-000, #fff); color: inherit; }
+  .chip { flex: 1; text-align: center; padding: 5px 0; border-radius: 14px; border: 0.5px solid var(--lg-border); font-size: 11px; cursor: pointer; background: var(--lg-card); color: var(--lg-text); }
   .chip.comfort.on { background: #f4b183; color: #5a2e0c; border-color: #f4b183; }
   .chip.eco.on { background: #8fd2b8; color: #114d33; border-color: #8fd2b8; }
   .chip.night.on { background: #9bb3e8; color: #1e2d5a; border-color: #9bb3e8; }
   .chip.away.on { background: #b8bfd6; color: #2a2f40; border-color: #b8bfd6; }
   .chip.frost.on { background: #9bd0e8; color: #0f3c52; border-color: #9bd0e8; }
-  .room { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 0.5px solid var(--homey-color-mono-200, #eee); }
+  .room { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 0.5px solid var(--lg-border); }
   .room .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .room .v { color: var(--homey-text-color-light, #8a8a8e); white-space: nowrap; }
+  .room .v { color: var(--lg-muted); white-space: nowrap; }
   .tag { font-size: 10px; border-radius: 6px; padding: 1px 5px; background: #ffe8c2; margin-left: 4px; }
-  .chip.resume { border-color: #DA5046; color: #DA5046; font-weight: 600; flex: 0 0 34px; display: flex; align-items: center; justify-content: center; }
-  .empty { padding: 10px; color: var(--homey-text-color-light, #8a8a8e); text-align: center; }
+  .chip.resume { border-color: var(--lg-brand); color: var(--lg-brand); font-weight: 600; flex: 0 0 34px; display: flex; align-items: center; justify-content: center; }
+  .empty { padding: 10px; color: var(--lg-muted); text-align: center; }
 </style></head>
 <body>
 <div class="wrap">

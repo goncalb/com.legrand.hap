@@ -11,6 +11,7 @@ module.exports = {
       tilt: d.hasCapability('shutter_tilt') ? d.getCapabilityValue('shutter_tilt') : null,
       moving: !!d.getCapabilityValue('shutter_moving'),
       direction: d._direction || null,
+      travelUp: d.travelTime('up'), travelDown: d.travelTime('down'),   // learned seconds per full run (null = default)
       target: (() => { const a = d.acc(); const t = a && a.chars.TargetPosition; return t ? Math.round(t.value) : null; })(),
     }));
   },

@@ -17,7 +17,7 @@
 
 ---
 
-**Version 0.9.11 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
+**Version 0.9.13 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
 
 ## What it does
 
@@ -102,7 +102,16 @@ Three widgets for Homey Dashboards, each configurable per instance (which device
 | Scenes | Shutters | Heating |
 |---|---|---|
 | ![Scenes widget](docs/images/widget-scenes.png) | ![Shutters widget](docs/images/widget-shutters.png) | ![Heating widget](docs/images/widget-heating.png) |
-| Tiles with the scene's emoji; tap to run. Show all scenes or pick up to six. | Live-drawn shutters (curtain = position, slat gaps = tilt) that animate while the motor runs. Tap to select, then **Open / Shade / Close** — with nothing selected the buttons act on all shown shutters. | Current profile and next switch, profile chips to override, a resume button, and one row per room with temperature → target, a flame while heating and manual/off tags. |
+| Tiles with the scene's emoji; tap to run. Show all scenes or pick up to six. | Live-drawn shutters (curtain = position, slat gaps = tilt) that animate while the motor runs, at each shutter's own learned travel speed. Tap to select, then **Open / Shade / Close** — with nothing selected the buttons act on all shown shutters. | Current profile and next switch, profile chips to override, a resume button, and one row per room with temperature → target, a flame while heating and manual/off tags. |
+
+### Roadmap — widgets under consideration
+
+Design studies for the next widgets. Nothing here is built yet; feedback welcome in the issues.
+
+| Candidates | Colour tints | Room thermostat gauge |
+|---|---|---|
+| ![Widget candidates](docs/images/roadmap-widgets.png) | ![Tint study](docs/images/roadmap-tints.png) | ![Gauge study](docs/images/roadmap-thermostat-gauge.png) |
+| **Lights** (tile grid or room list, any Homey light incl. Hue), **room thermostat**, **today's heating timeline**, **gateway health**, **sensors strip** | Tile backgrounds follow the bulb's colour and brightness; thermostat tint follows heating / idle / off — all faint, brand red as accent | Arc gauge over the 5–30 °C range with the target marker, − / + setpoint, per-room profile chips and a "Plan" button to rejoin the schedule |
 
 ## Heating plan
 

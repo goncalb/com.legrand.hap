@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.legrand.hap",
-  "version": "0.9.11",
+  "version": "0.9.13",
   "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [
@@ -960,6 +960,30 @@
                 "en": "Slat tilt (Orientable mode)"
               },
               "value": ""
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "label": {
+            "en": "Learned travel times"
+          },
+          "children": [
+            {
+              "id": "travel_up",
+              "type": "label",
+              "label": {
+                "en": "Full travel up (0 → 100 %)"
+              },
+              "value": "not learned yet"
+            },
+            {
+              "id": "travel_down",
+              "type": "label",
+              "label": {
+                "en": "Full travel down (100 → 0 %)"
+              },
+              "value": "not learned yet"
             }
           ]
         }

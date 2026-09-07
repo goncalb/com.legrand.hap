@@ -1,4 +1,10 @@
 {
+  "0.9.13": {
+    "en": "Widgets: readable dark theme. Better shutter travel-time learning."
+  },
+  "0.9.12": {
+    "en": "Shutters learn their travel times; the widget animates each one at its real pace."
+  },
   "0.9.11": {
     "en": "Remote button trigger: single / double / long press."
   },

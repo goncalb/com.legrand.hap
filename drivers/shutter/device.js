@@ -107,6 +107,10 @@ class ShutterDevice extends HapDevice {
 
   async _setPosition(pos) {
     pos = Math.round(pos);
+    // A position update while a run is pending marks the end of the *travel* (the orientable shutters keep
+    // the motor busy afterwards re-opening the slats, which must not count as travel time).
+    if (this._runStart && this._runStart.pos != null && pos !== this._runStart.pos) await this._learnTravel(pos);
+    this._lastPos = pos;
     await this.setCapabilityValue('windowcoverings_set', pos / 100).catch(this.error);
     await this._updateStatus();
   }
@@ -120,10 +124,39 @@ class ShutterDevice extends HapDevice {
 
   /** PositionState: 0 = closing (down), 1 = opening (up), 2 = stopped. */
   async _setMoving(state) {
+    const wasMoving = this._moving;
     this._moving = state !== 2;
     this._direction = state === 1 ? 'up' : state === 0 ? 'down' : null;
+    if (this._moving && !wasMoving) this._runStart = { t: Date.now(), pos: this._lastPos, dir: this._direction };
+    else if (!this._moving && wasMoving && this._runStart) await this._learnTravel(this._lastPos);   // fallback: no position update seen
     await this.setCapabilityValue('shutter_moving', this._moving).catch(this.error);
     await this._updateStatus();
+  }
+
+  /**
+   * Travel-time learning: every run of >= 20 % is timed from "motor started" to "position reached"
+   * and converted to "seconds for a full 0-100 % travel", kept as a rolling average per direction
+   * (up / down differ on most motors). Used by the widget to animate at the true pace.
+   */
+  async _learnTravel(endPos) {
+    const run = this._runStart; this._runStart = null;
+    if (!run || run.pos == null || endPos == null || !run.dir) return;
+    const delta = Math.abs(endPos - run.pos);
+    const secs = (Date.now() - run.t) / 1000;
+    if (delta < 20 || secs < 2) return;                       // too short to be a reliable sample
+    const full = Math.round((secs / delta) * 100 * 10) / 10;
+    const key = `travel_${run.dir}`;
+    const samples = (this.getStoreValue(key) || []).slice(-4); samples.push(full);
+    await this.setStoreValue(key, samples).catch(this.error);
+    const avg = Math.round(samples.reduce((a, b) => a + b, 0) / samples.length * 10) / 10;
+    this.log(`travel ${run.dir}: ${delta} % in ${secs.toFixed(1)} s → ${full} s/100 % (avg ${avg} s over ${samples.length})`);
+    await this.setSettings({ [key]: `${avg} s (${samples.length} runs)` }).catch(() => {});
+  }
+
+  /** Learned full-travel time in seconds for a direction, or null if not learned yet. */
+  travelTime(dir) {
+    const samples = this.getStoreValue(`travel_${dir}`) || [];
+    return samples.length ? Math.round(samples.reduce((a, b) => a + b, 0) / samples.length * 10) / 10 : null;
   }
 
   async onChar(type, value) {
