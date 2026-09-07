@@ -1,4 +1,7 @@
 {
+  "0.9.11": {
+    "en": "Remote button trigger: single / double / long press."
+  },
   "0.9.10": {
     "en": "Experimental support for sockets/contactors, door/motion/smoke/CO sensors and colour lights. Thermostat driver accepts the standard Thermostat service."
   },

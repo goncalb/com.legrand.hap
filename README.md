@@ -17,7 +17,7 @@
 
 ---
 
-**Version 0.9.10 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
+**Version 0.9.11 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
 
 ## What it does
 
@@ -79,7 +79,7 @@ slider snaps to them.
 ## Flows
 
 **Triggers**
-- Remote: *Button [1–4] is pressed*
+- Remote: *Button [1–8] is pressed ([any | single | double | long])* — token: press type
 - Thermostat: *Heating started / stopped*
 - Heating plan: *Heating profile changed* (tokens: profile, previous profile)
 - plus Homey's built-in cards for every standard capability (position changed, temperature changed, …)

@@ -3,7 +3,7 @@
     "en": "A button is pressed"
   },
   "titleFormatted": {
-    "en": "Button [[button]] is pressed"
+    "en": "Button [[button]] is pressed ([[press]])"
   },
   "args": [
     {
@@ -67,6 +67,49 @@
           }
         }
       ]
+    },
+    {
+      "type": "dropdown",
+      "name": "press",
+      "title": {
+        "en": "Press type"
+      },
+      "values": [
+        {
+          "id": "any",
+          "title": {
+            "en": "any press"
+          }
+        },
+        {
+          "id": "single",
+          "title": {
+            "en": "single press"
+          }
+        },
+        {
+          "id": "double",
+          "title": {
+            "en": "double press"
+          }
+        },
+        {
+          "id": "long",
+          "title": {
+            "en": "long press"
+          }
+        }
+      ]
+    }
+  ],
+  "tokens": [
+    {
+      "name": "press",
+      "type": "string",
+      "title": {
+        "en": "Press type"
+      },
+      "example": "single"
     }
   ]
 }

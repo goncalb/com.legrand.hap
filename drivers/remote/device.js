@@ -12,9 +12,10 @@ class RemoteDevice extends HapDevice {
     return acc;
   }
 
-  async onChar(type, value) {
+  async onChar(type, value, ev = {}) {
     if (type === 'ButtonEvent') {
-      await this.driver.buttonTrigger.trigger(this, { }, { button: value }).catch(this.error);
+      const press = ev.press || 'single';
+      await this.driver.buttonTrigger.trigger(this, { press }, { button: value, press }).catch(this.error);
     } else if (type === 'StatusLowBattery') {
       await this.setCapabilityValue('alarm_battery', value === 1).catch(this.error);
     }

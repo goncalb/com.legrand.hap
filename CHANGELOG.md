@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.9.11] — 2026-09-07
+
+### Added
+- Remote button trigger: press type (single / double / long / any) as an argument and a token. Legrand remotes report single presses only; other HomeKit buttons may report all three.
+
 ## [0.9.10] — 2026-09-07
 
 ### Added (experimental — built from the HomeKit specification, not yet verified on hardware)

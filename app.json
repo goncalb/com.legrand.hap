@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.legrand.hap",
-  "version": "0.9.10",
+  "version": "0.9.11",
   "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [
@@ -152,7 +152,7 @@
           "en": "A button is pressed"
         },
         "titleFormatted": {
-          "en": "Button [[button]] is pressed"
+          "en": "Button [[button]] is pressed ([[press]])"
         },
         "args": [
           {
@@ -216,6 +216,49 @@
                 }
               }
             ]
+          },
+          {
+            "type": "dropdown",
+            "name": "press",
+            "title": {
+              "en": "Press type"
+            },
+            "values": [
+              {
+                "id": "any",
+                "title": {
+                  "en": "any press"
+                }
+              },
+              {
+                "id": "single",
+                "title": {
+                  "en": "single press"
+                }
+              },
+              {
+                "id": "double",
+                "title": {
+                  "en": "double press"
+                }
+              },
+              {
+                "id": "long",
+                "title": {
+                  "en": "long press"
+                }
+              }
+            ]
+          }
+        ],
+        "tokens": [
+          {
+            "name": "press",
+            "type": "string",
+            "title": {
+              "en": "Press type"
+            },
+            "example": "single"
           }
         ],
         "id": "remote_button_pressed"

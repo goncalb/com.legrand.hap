@@ -6,7 +6,7 @@ class RemoteDriver extends HapDriver {
 
   async onInit() {
     this.buttonTrigger = this.homey.flow.getDeviceTriggerCard('remote_button_pressed');
-    this.buttonTrigger.registerRunListener(async (args, state) => String(args.button) === String(state.button));
+    this.buttonTrigger.registerRunListener(async (args, state) => String(args.button) === String(state.button) && (args.press === 'any' || args.press === state.press));
   }
 }
 
