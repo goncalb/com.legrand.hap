@@ -13,7 +13,7 @@ module.exports = {
       }
     }
     const names = homey.settings.get('names') || {};
-    const order = { gateway: 0, thermostat: 1, shutter: 2, light: 3, remote: 4, unknown: 9 };
+    const order = { gateway: 0, thermostat: 1, shutter: 2, light: 3, socket: 4, remote: 5, sensor: 6, unknown: 9 };
     const statusOf = (a) => {
       const c = a.chars;
       if (a.klass === 'shutter') {
@@ -32,6 +32,14 @@ module.exports = {
         return t;
       }
       if (a.klass === 'remote') return c.StatusLowBattery ? (c.StatusLowBattery.value === 1 ? 'Battery low' : 'Battery ok') : '';
+      if (a.klass === 'socket') return c.On ? (c.On.value ? 'On' : 'Off') : '';
+      if (a.klass === 'sensor') {
+        const st = { contact: c.ContactSensorState && (c.ContactSensorState.value === 1 ? 'Open' : 'Closed'),
+          motion: c.MotionDetected && (c.MotionDetected.value ? 'Motion' : 'No motion'),
+          smoke: c.SmokeDetected && (c.SmokeDetected.value === 1 ? 'SMOKE' : 'Clear'),
+          co: c.CarbonMonoxideDetected && (c.CarbonMonoxideDetected.value === 1 ? 'CO ALARM' : 'Clear') }[a.sensorType] || '';
+        return st + (c.StatusLowBattery && c.StatusLowBattery.value === 1 ? ' · battery low' : '');
+      }
       if (a.klass === 'thermostat') {
         const cur = c.CurrentTemperature ? c.CurrentTemperature.value : null;
         const tgt = c.HeatingThresholdTemperature ? c.HeatingThresholdTemperature.value : null;

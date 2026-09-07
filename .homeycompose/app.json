@@ -1,6 +1,6 @@
 {
   "id": "com.legrand.hap",
-  "version": "0.9.1",
+  "version": "0.9.10",
   "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [

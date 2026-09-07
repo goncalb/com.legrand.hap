@@ -17,7 +17,7 @@
 
 ---
 
-**Version 0.9.1 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
+**Version 0.9.10 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
 
 ## What it does
 
@@ -50,10 +50,23 @@ If Homey can't see a device via mDNS (different VLANs), pair it by HomeKit id + 
 
 | Driver | HomeKit service | Capabilities |
 |---|---|---|
-| **Light** | Lightbulb | `onoff`, `dim` (added automatically for dimmers). Energy approximation 8 W (editable). |
+| **Light** | Lightbulb | `onoff`, `dim` (dimmers), `light_hue` / `light_saturation` / `light_temperature` (colour bulbs) — all added automatically. Energy approximation 8 W (editable). |
 | **Shutter** | Window Covering | `windowcoverings_set` (position), `shutter_tilt` (slat angle in degrees, only on shutters in *Orientable sun shades* mode), `shutter_moving`, `shutter_status` (tile text, e.g. `56 % · 44° ▲`) |
 | **Wireless remote** | Stateless Programmable Switch + Battery | `alarm_battery` + button-press Flow trigger |
-| **Smarther thermostat** | Heater Cooler + Humidity Sensor | `measure_temperature`, `target_temperature` (5–30 °C, 0.5 steps), `thermostat_heating`, `thermostat_mode` (Schedule / Manual / Frost guard / Off), `measure_humidity`, `thermostat_status` |
+| **Smarther thermostat** | Heater Cooler (or Thermostat) + Humidity Sensor | `measure_temperature`, `target_temperature` (5–30 °C, 0.5 steps), `thermostat_heating`, `thermostat_mode` (Schedule / Manual / Frost guard / Off), `measure_humidity`, `thermostat_status` |
+| **Socket / contactor** *(experimental)* | Outlet / Switch | `onoff` — connected sockets, contactors, teleruptors, cable outlets |
+| **Sensor** *(experimental)* | Contact / Motion / Smoke / CO Sensor + Battery | `alarm_contact` / `alarm_motion` / `alarm_smoke` / `alarm_co`, `alarm_battery`, `alarm_tamper` |
+
+### Support status
+
+| Status | What it means | Devices |
+|---|---|---|
+| ✅ **Verified** | Tested on real hardware by the author | Light switches (single/double), dimmers, roller shutters (aperture and orientable modes), wireless 2-button remotes, Smarther with Netatmo thermostat, the Legrand gateway itself |
+| 🧪 **Experimental — likely** | Implemented from the HomeKit specification; Legrand documents these as HomeKit-compatible but they have not been seen on hardware yet | Sockets, contactors, teleruptors, cable outlets (Legrand lists all "with Netatmo" outlets as HomeKit devices) · colour / tunable-white third-party bulbs · Netatmo smoke and CO alarms (standalone HomeKit accessories, paired like a Smarther) · thermostats exposing the standard Thermostat service |
+| 🧪 **Experimental — uncertain** | Code exists, exposure over HomeKit not confirmed | Wireless motion sensor (a gateway accessory in Legrand's US range) |
+| ❌ **Not possible** | Not exposed over HomeKit by Legrand/Netatmo | Netatmo door/window sensors (they pair with Netatmo cameras, cloud only), Netatmo modulating thermostat and radiator valves, energy meter / load shedder, BTicino alarm system, sirens, Home + Control scenes, schedules and Boost |
+
+Have an experimental device? Its dump from the app settings (Devices tab → status) or a log excerpt is all that's needed to promote it to verified — please open an issue.
 
 All devices: **Blink** (identify the wall module) and **Rebuild device capabilities**
 maintenance actions in Advanced settings. Devices are identified by serial number, so they

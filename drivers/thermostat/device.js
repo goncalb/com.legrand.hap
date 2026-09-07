@@ -24,7 +24,29 @@ class ThermostatDevice extends HapDevice {
 
   _setpointChar() {
     const acc = this.acc();
-    return acc && (acc.chars.HeatingThresholdTemperature || acc.chars.CoolingThresholdTemperature);
+    return acc && (acc.chars.HeatingThresholdTemperature || acc.chars.TargetTemperature || acc.chars.CoolingThresholdTemperature);
+  }
+  _setpointName() {
+    const acc = this.acc();
+    return acc.chars.HeatingThresholdTemperature ? 'HeatingThresholdTemperature' : acc.chars.TargetTemperature ? 'TargetTemperature' : 'CoolingThresholdTemperature';
+  }
+  /** Unit "on"? HeaterCooler uses Active; the Thermostat service uses TargetHeatingCoolingState (0 = off). */
+  _isActive() {
+    const c = this.acc().chars;
+    if (c.Active) return c.Active.value === 1;
+    if (c.TargetHeatingCoolingState) return c.TargetHeatingCoolingState.value !== 0;
+    return true;
+  }
+  async _setActive(on) {
+    const c = this.acc().chars;
+    if (c.Active) { if (on && c.TargetHeaterCoolerState && c.TargetHeaterCoolerState.value !== 1) await this.hap.setChar(this.serial, 'TargetHeaterCoolerState', 1); await this.hap.setChar(this.serial, 'Active', on ? 1 : 0); }
+    else if (c.TargetHeatingCoolingState) await this.hap.setChar(this.serial, 'TargetHeatingCoolingState', on ? 1 : 0);
+  }
+  _isHeating() {
+    const c = this.acc().chars;
+    if (c.CurrentHeaterCoolerState) return c.CurrentHeaterCoolerState.value === 2;
+    if (c.CurrentHeatingCoolingState) return c.CurrentHeatingCoolingState.value === 1;
+    return false;
   }
 
   async sync() {
@@ -45,7 +67,7 @@ class ThermostatDevice extends HapDevice {
     });
     this._listen('thermostat_mode', async (mode) => {
       const heating = this.homey.app.heating;
-      if (mode === 'off') { await this.hap.setChar(this.serial, 'Active', 0); return; }
+      if (mode === 'off') { await this._setActive(false); return; }
       if (mode === 'frost') { await this.setFrostGuard(); heating.noteSetpointChange(this.serial, this._frostTemp()); return; }
       if (mode === 'plan') {
         const ok = await heating.rejoin(this.serial);
@@ -54,11 +76,10 @@ class ThermostatDevice extends HapDevice {
         return;
       }
       // manual: keep the current setpoint (or a sensible one when leaving frost guard) and hold it
-      if (acc.chars.TargetHeaterCoolerState) await this.hap.setChar(this.serial, 'TargetHeaterCoolerState', 1);
-      await this.hap.setChar(this.serial, 'Active', 1);
+      await this._setActive(true);
       const setpoint = this._setpointChar();
       let v = setpoint ? Number(setpoint.value) : 20;
-      if (v <= this._frostTemp()) { v = 20; await this.hap.setChar(this.serial, 'HeatingThresholdTemperature', v); }
+      if (v <= this._frostTemp()) { v = 20; await this.hap.setChar(this.serial, this._setpointName(), v); }
       heating._expected.delete(this.serial);
       heating.noteSetpointChange(this.serial, v);
       await this._setMode();
@@ -70,20 +91,18 @@ class ThermostatDevice extends HapDevice {
     if (acc.chars.CurrentRelativeHumidity && this.hasCapability('measure_humidity')) await this.setCapabilityValue('measure_humidity', acc.chars.CurrentRelativeHumidity.value).catch(this.error);
     if (sp) await this.setCapabilityValue('target_temperature', sp.value).catch(this.error);
     await this._setMode();
-    if (acc.chars.CurrentHeaterCoolerState) await this._setHeating(acc.chars.CurrentHeaterCoolerState.value === 2);
+    await this._setHeating(this._isHeating());
     return acc;
   }
 
   _frostTemp() { return Number(this.getSetting('frost_temp')) || 7; }
 
   async _writeSetpoint(value) {
-    const acc = this.acc();
     const ch = this._setpointChar();
     const step = (ch && ch.step) || 0.5;
     const v = Math.round(value / step) * step;
-    if (acc.chars.TargetHeaterCoolerState && acc.chars.TargetHeaterCoolerState.value !== 1) await this.hap.setChar(this.serial, 'TargetHeaterCoolerState', 1);
-    await this.hap.setChar(this.serial, acc.chars.HeatingThresholdTemperature ? 'HeatingThresholdTemperature' : 'CoolingThresholdTemperature', v);
-    if (acc.chars.Active && acc.chars.Active.value !== 1) await this.hap.setChar(this.serial, 'Active', 1);
+    await this.hap.setChar(this.serial, this._setpointName(), v);
+    if (!this._isActive()) await this._setActive(true);
   }
 
   /** Called by the heating engine: apply a scheduled target (not a manual change). */
@@ -94,8 +113,7 @@ class ThermostatDevice extends HapDevice {
   }
 
   async _setMode() {
-    const acc = this.acc();
-    const active = acc.chars.Active ? acc.chars.Active.value === 1 : true;
+    const active = this._isActive();
     const sp = this._setpointChar();
     const target = sp ? Number(sp.value) : null;
     const frost = active && target != null && Math.abs(target - this._frostTemp()) < 0.01;
@@ -133,22 +151,20 @@ class ThermostatDevice extends HapDevice {
   async onChar(type, value) {
     if (type === 'CurrentTemperature') await this.setCapabilityValue('measure_temperature', value).catch(this.error);
     else if (type === 'CurrentRelativeHumidity' && this.hasCapability('measure_humidity')) await this.setCapabilityValue('measure_humidity', value).catch(this.error);
-    else if (type === 'HeatingThresholdTemperature' || type === 'CoolingThresholdTemperature') {
+    else if (type === 'HeatingThresholdTemperature' || type === 'CoolingThresholdTemperature' || type === 'TargetTemperature') {
       await this.setCapabilityValue('target_temperature', value).catch(this.error);
       await this._setMode();
       this.homey.app.heating.noteSetpointChange(this.serial, value);
     }
-    else if (type === 'Active' || type === 'TargetHeaterCoolerState') await this._setMode();
-    else if (type === 'CurrentHeaterCoolerState') await this._setHeating(value === 2);
+    else if (type === 'Active' || type === 'TargetHeaterCoolerState' || type === 'TargetHeatingCoolingState') await this._setMode();
+    else if (type === 'CurrentHeaterCoolerState' || type === 'CurrentHeatingCoolingState') await this._setHeating(this._isHeating());
   }
 
   isHeating() { return this._heating; }
 
   async setFrostGuard() {
-    const t = this._frostTemp();
-    if (this.acc().chars.TargetHeaterCoolerState) await this.hap.setChar(this.serial, 'TargetHeaterCoolerState', 1);
-    await this.hap.setChar(this.serial, 'Active', 1);
-    await this.hap.setChar(this.serial, 'HeatingThresholdTemperature', t);
+    await this._setActive(true);
+    await this.hap.setChar(this.serial, this._setpointName(), this._frostTemp());
     return true;
   }
 }

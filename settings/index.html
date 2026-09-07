@@ -103,7 +103,9 @@
     <div class="section">Thermostats</div><div class="group" id="list-thermostat"></div>
     <div class="section">Shutters</div><div class="group" id="list-shutter"></div>
     <div class="section">Lights</div><div class="group" id="list-light"></div>
+    <div class="section">Sockets</div><div class="group" id="list-socket"></div>
     <div class="section">Remotes</div><div class="group" id="list-remote"></div>
+    <div class="section">Sensors</div><div class="group" id="list-sensor"></div>
     <div class="section">&nbsp;</div>
     <div class="group"><div class="row link" onclick="refreshDb()"><div class="main"><div class="t">Refresh from gateway</div></div><span id="dbstate" class="v"></span></div></div>
   </div>
@@ -435,10 +437,10 @@
   function loadDevices() {
     HomeyRef.api('GET', '/devices', null, (err, devices) => {
       if (err) return;
-      const groups = { gateway: [], thermostat: [], shutter: [], light: [], remote: [] };
+      const groups = { gateway: [], thermostat: [], shutter: [], light: [], socket: [], remote: [], sensor: [] };
       for (const d of devices) (groups[d.klass] || groups.remote).push(d);
       document.getElementById('gwcard').innerHTML = groups.gateway.map(devRow).join('') || '<div class="row"><div class="main muted">No gateway connected</div></div>';
-      for (const k of ['thermostat', 'shutter', 'light', 'remote'])
+      for (const k of ['thermostat', 'shutter', 'light', 'socket', 'remote', 'sensor'])
         document.getElementById('list-' + k).innerHTML = groups[k].map(devRow).join('') || '<div class="row"><div class="main muted">None</div></div>';
       const filter = document.getElementById('filter'); const current = filter.value;
       filter.innerHTML = '<option value="">All devices</option>';

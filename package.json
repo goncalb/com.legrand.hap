@@ -1,6 +1,6 @@
 {
   "name": "com.legrand.hap",
-  "version": "0.9.1",
+  "version": "0.9.10",
   "main": "app.js",
   "dependencies": {
     "hap-controller": "^0.10.2",

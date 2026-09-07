@@ -2,6 +2,15 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.9.10] — 2026-09-07
+
+### Added (experimental — built from the HomeKit specification, not yet verified on hardware)
+- **Socket / contactor** driver: connected sockets, contactors, teleruptors, cable outlets (Outlet / Switch services).
+- **Sensor** driver: motion, smoke and CO sensors (and contact sensors, should any appear over HomeKit) with battery and tamper status.
+- **Colour lights**: hue, saturation and colour temperature on lights that expose them (e.g. Zigbee third-party bulbs).
+- Thermostat driver also accepts the standard HomeKit *Thermostat* service (older Smarther firmware / other vendors).
+- Remote button trigger supports up to 8 buttons.
+
 ## [0.9.1] — 2026-09-07
 
 ### Fixed

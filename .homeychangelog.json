@@ -1,4 +1,7 @@
 {
+  "0.9.10": {
+    "en": "Experimental support for sockets/contactors, door/motion/smoke/CO sensors and colour lights. Thermostat driver accepts the standard Thermostat service."
+  },
   "0.9.1": {
     "en": "Shutters widget: room names no longer split across lines."
   },

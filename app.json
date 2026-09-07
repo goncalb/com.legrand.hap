@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.legrand.hap",
-  "version": "0.9.1",
+  "version": "0.9.10",
   "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [
@@ -189,6 +189,30 @@
                 "id": "4",
                 "title": {
                   "en": "Button 4"
+                }
+              },
+              {
+                "id": "5",
+                "title": {
+                  "en": "Button 5"
+                }
+              },
+              {
+                "id": "6",
+                "title": {
+                  "en": "Button 6"
+                }
+              },
+              {
+                "id": "7",
+                "title": {
+                  "en": "Button 7"
+                }
+              },
+              {
+                "id": "8",
+                "title": {
+                  "en": "Button 8"
                 }
               }
             ]
@@ -724,6 +748,101 @@
     },
     {
       "name": {
+        "en": "Sensor (experimental)"
+      },
+      "class": "sensor",
+      "capabilities": [
+        "alarm_battery",
+        "button.rebuild"
+      ],
+      "capabilitiesOptions": {
+        "button.rebuild": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Rebuild device capabilities"
+          },
+          "desc": {
+            "en": "Re-creates this device's controls from the HomeKit data."
+          }
+        }
+      },
+      "energy": {
+        "batteries": [
+          "OTHER"
+        ]
+      },
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "images": {
+        "small": "/drivers/sensor/assets/images/small.png",
+        "large": "/drivers/sensor/assets/images/large.png"
+      },
+      "pair": [
+        {
+          "id": "setup"
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Device information"
+          },
+          "children": [
+            {
+              "id": "serial",
+              "type": "label",
+              "label": {
+                "en": "Serial number"
+              },
+              "value": ""
+            },
+            {
+              "id": "model",
+              "type": "label",
+              "label": {
+                "en": "Model"
+              },
+              "value": ""
+            },
+            {
+              "id": "firmware",
+              "type": "label",
+              "label": {
+                "en": "Firmware"
+              },
+              "value": ""
+            },
+            {
+              "id": "kind",
+              "type": "label",
+              "label": {
+                "en": "Sensor type"
+              },
+              "value": ""
+            }
+          ]
+        }
+      ],
+      "id": "sensor"
+    },
+    {
+      "name": {
         "en": "Shutter"
       },
       "class": "windowcoverings",
@@ -832,6 +951,101 @@
         }
       },
       "id": "shutter"
+    },
+    {
+      "name": {
+        "en": "Socket / contactor (experimental)"
+      },
+      "class": "socket",
+      "capabilities": [
+        "onoff",
+        "button.identify",
+        "button.rebuild"
+      ],
+      "capabilitiesOptions": {
+        "button.identify": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Blink the module"
+          }
+        },
+        "button.rebuild": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Rebuild device capabilities"
+          },
+          "desc": {
+            "en": "Re-creates this device's controls from the HomeKit data."
+          }
+        }
+      },
+      "energy": {
+        "approximation": {
+          "usageOn": 0,
+          "usageOff": 0
+        }
+      },
+      "platforms": [
+        "local"
+      ],
+      "connectivity": [
+        "lan"
+      ],
+      "images": {
+        "small": "/drivers/socket/assets/images/small.png",
+        "large": "/drivers/socket/assets/images/large.png"
+      },
+      "pair": [
+        {
+          "id": "setup"
+        },
+        {
+          "id": "list_devices",
+          "template": "list_devices",
+          "navigation": {
+            "next": "add_devices"
+          }
+        },
+        {
+          "id": "add_devices",
+          "template": "add_devices"
+        }
+      ],
+      "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Device information"
+          },
+          "children": [
+            {
+              "id": "serial",
+              "type": "label",
+              "label": {
+                "en": "Serial number"
+              },
+              "value": ""
+            },
+            {
+              "id": "model",
+              "type": "label",
+              "label": {
+                "en": "Model"
+              },
+              "value": ""
+            },
+            {
+              "id": "firmware",
+              "type": "label",
+              "label": {
+                "en": "Firmware"
+              },
+              "value": ""
+            }
+          ]
+        }
+      ],
+      "id": "socket"
     },
     {
       "name": {

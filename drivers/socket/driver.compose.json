@@ -1,0 +1,25 @@
+{
+  "name": { "en": "Socket / contactor (experimental)" },
+  "class": "socket",
+  "capabilities": ["onoff", "button.identify", "button.rebuild"],
+  "capabilitiesOptions": {
+    "button.identify": { "maintenanceAction": true, "title": { "en": "Blink the module" } },
+    "button.rebuild":  { "maintenanceAction": true, "title": { "en": "Rebuild device capabilities" }, "desc": { "en": "Re-creates this device's controls from the HomeKit data." } }
+  },
+  "energy": { "approximation": { "usageOn": 0, "usageOff": 0 } },
+  "platforms": ["local"],
+  "connectivity": ["lan"],
+  "images": { "small": "{{driverAssetsPath}}/images/small.png", "large": "{{driverAssetsPath}}/images/large.png" },
+  "pair": [
+    { "id": "setup" },
+    { "id": "list_devices", "template": "list_devices", "navigation": { "next": "add_devices" } },
+    { "id": "add_devices", "template": "add_devices" }
+  ],
+  "settings": [
+    { "type": "group", "label": { "en": "Device information" }, "children": [
+      { "id": "serial",   "type": "label", "label": { "en": "Serial number" }, "value": "" },
+      { "id": "model",    "type": "label", "label": { "en": "Model" }, "value": "" },
+      { "id": "firmware", "type": "label", "label": { "en": "Firmware" }, "value": "" }
+    ]}
+  ]
+}
