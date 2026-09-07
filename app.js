@@ -14,6 +14,11 @@ class LegrandHapApp extends Homey.App {
     this.hlog = hlog;
 
     this._migrateSettings();
+    // heal: an IPv6 link-local address stored by an earlier build cannot be used — drop it
+    const storedEndpoints = this.homey.settings.get('endpoints') || {};
+    let healed = false;
+    for (const ep of Object.values(storedEndpoints)) if (ep.address && String(ep.address.address).includes(':')) { ep.address = null; healed = true; }
+    if (healed) this.homey.settings.set('endpoints', storedEndpoints);
 
     this.session = new HapSession({
       log: hlog,
@@ -57,18 +62,28 @@ class LegrandHapApp extends Homey.App {
         : (st.next ? `plan "${st.plan}" · next ${PROF[st.next.profile]} at ${st.next.time}` : `plan "${st.plan}"`);
       this.homey.notifications.createNotification({ excerpt: `🌡️ Heating: **${PROF[profile] || profile}** — ${detail}` }).catch(() => {});
     });
-    const refreshModes = () => { try { for (const d of this.homey.drivers.getDriver('thermostat').getDevices()) d._setMode().catch(() => {}); } catch (e) { /* none */ } };
+    const refreshModes = () => { try { for (const d of this.homey.drivers.getDriver('thermostat').getDevices()) d._setMode().catch(() => {}); } catch { /* ignore */ } };
     this.heating.on('profile-changed', () => setTimeout(refreshModes, 1500));
     this.heating.on('manual', () => setTimeout(refreshModes, 500));
     this.heating.on('manual', (serial, { value, until }) => {
       if (!this.homey.settings.get('heatingNotifyRooms')) return;
       let name = serial;
-      try { const d = this.homey.drivers.getDriver('thermostat').getDevices().find((x) => x.getData().serial === serial); if (d) name = d.getName(); } catch (e) { /* noop */ }
+      try { const d = this.homey.drivers.getDriver('thermostat').getDevices().find((x) => x.getData().serial === serial); if (d) name = d.getName(); } catch { /* ignore */ }
       const when = until ? `until ${new Date(until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'until cancelled';
       this.homey.notifications.createNotification({ excerpt: `🌡️ ${name}: manual **${value} °C** ${when}` }).catch(() => {});
     });
     this.homey.settings.on('set', (key) => { if (key === 'heating') setTimeout(refreshModes, 1500); });
     this.heating.start();
+
+    // Widget: scene pickers
+    try {
+      const w = this.homey.dashboards.getWidget('scenes');
+      for (let i = 1; i <= 6; i++) {
+        w.registerSettingAutocompleteListener(`scene${i}`, async (query) =>
+          this.scenes.list().filter((sc) => sc.name.toLowerCase().includes((query || '').toLowerCase()))
+            .map((sc) => ({ name: (sc.icon ? sc.icon + ' ' : '') + sc.name, id: sc.id })));
+      }
+    } catch (e) { hlog('warn', null, `widget setup: ${e.message}`); }
 
     this.session.start();
 

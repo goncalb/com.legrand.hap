@@ -1,0 +1,66 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/>
+<style>
+  html, body { margin: 0; overflow: hidden; }
+  body { font-family: var(--homey-font-family-default, -apple-system, sans-serif); color: var(--homey-text-color, #1c1c1e); font-size: 12px; }
+  .wrap { padding: 8px 10px; }
+  .hd { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .hd .t { font-weight: 600; font-size: 14px; color: #DA5046; }
+  .hd .s { color: var(--homey-text-color-light, #8a8a8e); font-size: 11px; }
+  .chips { display: flex; gap: 5px; margin-bottom: 6px; }
+  .chip { flex: 1; text-align: center; padding: 5px 0; border-radius: 14px; border: 0.5px solid var(--homey-color-mono-300, #ccc); font-size: 11px; cursor: pointer; background: var(--homey-color-mono-000, #fff); color: inherit; }
+  .chip.comfort.on { background: #f4b183; color: #5a2e0c; border-color: #f4b183; }
+  .chip.eco.on { background: #8fd2b8; color: #114d33; border-color: #8fd2b8; }
+  .chip.night.on { background: #9bb3e8; color: #1e2d5a; border-color: #9bb3e8; }
+  .chip.away.on { background: #b8bfd6; color: #2a2f40; border-color: #b8bfd6; }
+  .chip.frost.on { background: #9bd0e8; color: #0f3c52; border-color: #9bd0e8; }
+  .room { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 0.5px solid var(--homey-color-mono-200, #eee); }
+  .room .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .room .v { color: var(--homey-text-color-light, #8a8a8e); white-space: nowrap; }
+  .tag { font-size: 10px; border-radius: 6px; padding: 1px 5px; background: #ffe8c2; margin-left: 4px; }
+  .chip.resume { border-color: #DA5046; color: #DA5046; font-weight: 600; flex: 0 0 34px; display: flex; align-items: center; justify-content: center; }
+  .empty { padding: 10px; color: var(--homey-text-color-light, #8a8a8e); text-align: center; }
+</style></head>
+<body>
+<div class="wrap">
+  <div class="hd"><span class="t">Heating</span><span class="s" id="status">…</span></div>
+  <div class="chips" id="chips"></div>
+  <div id="rooms"></div>
+</div>
+<script type="text/javascript">
+  let HomeyRef, S = {}, ids = [];
+  const PROF = { comfort: 'Comfort', eco: 'Eco', night: 'Night', away: 'Away', frost: 'Frost' };
+  function render(res) {
+    const st = res.status || {};
+    const eff = st.effective;
+    document.getElementById('status').textContent = st.override
+      ? (PROF[eff] + ' · override' + (st.override.until ? ' until ' + new Date(st.override.until).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''))
+      : (st.enabled ? ((st.plan || 'Plan') + ' · ' + PROF[eff] + (st.next ? ' · next ' + PROF[st.next.profile] + ' ' + st.next.time : '')) : 'Plan off');
+    const chips = document.getElementById('chips');
+    chips.style.display = S.chips === false ? 'none' : 'flex';
+    chips.innerHTML = Object.keys(PROF).map((p) => '<button class="chip ' + p + (eff === p ? ' on' : '') + '" onclick="setProfile(\'' + p + '\')">' + PROF[p] + '</button>').join('') +
+      '<button class="chip resume" onclick="resume()" title="Back to schedule"><svg width=\'13\' height=\'13\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2.5\' stroke-linecap=\'round\' stroke-linejoin=\'round\'><path d=\'M3 12a9 9 0 1 0 3-6.7\'/><polyline points=\'3 3 3 9 9 9\'/></svg></button>';
+    const rooms = res.rooms;
+    const el = document.getElementById('rooms');
+    el.innerHTML = rooms.length ? '' : '<div class="empty">No thermostats.</div>';
+    for (const r of rooms) {
+      let tag = '';
+      if (r.mode === 'off') tag = '<span class="tag" style="background:#ececef">off</span>';
+      else if (r.manualUntil) tag = '<span class="tag">manual · ' + new Date(r.manualUntil).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '</span>';
+      else if (r.mode === 'heat' && !r.follows) tag = '<span class="tag" style="background:#ececef">manual</span>';
+      el.innerHTML += '<div class="room"><span class="n">' + r.name.replace(/</g, '&lt;') + tag + '</span>' +
+        '<span class="v">' + (r.temp != null ? r.temp.toFixed(1) : '–') + ' → ' + (r.target != null ? r.target : '–') + '</span><span style="width:16px;text-align:center">' + (r.heating ? '🔥' : '') + '</span></div>';
+    }
+    if (HomeyRef.setHeight) HomeyRef.setHeight(40 + (S.chips === false ? 0 : 34) + Math.max(1, rooms.length) * 30 + 12);
+  }
+  function load() { HomeyRef.api('GET', '/state?ids=' + encodeURIComponent(ids.join(','))).then(render).catch(() => {}); }
+  function setProfile(p) { HomeyRef.api('POST', '/override', { profile: p, duration: 'next' }).then(() => setTimeout(load, 800)); }
+  function resume() { HomeyRef.api('POST', '/resume', {}).then(() => setTimeout(load, 800)); }
+  function onHomeyReady(Homey) {
+    HomeyRef = Homey; Homey.ready();
+    S = Homey.getSettings ? Homey.getSettings() : {};
+    ids = (Homey.getDeviceIds && Homey.getDeviceIds()) || [];
+    load(); setInterval(load, 15000);
+  }
+</script>
+</body></html>

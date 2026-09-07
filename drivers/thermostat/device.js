@@ -56,8 +56,8 @@ class ThermostatDevice extends HapDevice {
       // manual: keep the current setpoint (or a sensible one when leaving frost guard) and hold it
       if (acc.chars.TargetHeaterCoolerState) await this.hap.setChar(this.serial, 'TargetHeaterCoolerState', 1);
       await this.hap.setChar(this.serial, 'Active', 1);
-      const sp = this._setpointChar();
-      let v = sp ? Number(sp.value) : 20;
+      const setpoint = this._setpointChar();
+      let v = setpoint ? Number(setpoint.value) : 20;
       if (v <= this._frostTemp()) { v = 20; await this.hap.setChar(this.serial, 'HeatingThresholdTemperature', v); }
       heating._expected.delete(this.serial);
       heating.noteSetpointChange(this.serial, v);

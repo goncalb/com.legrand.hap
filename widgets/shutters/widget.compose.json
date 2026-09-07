@@ -1,0 +1,61 @@
+{
+  "name": {
+    "en": "Legrand shutters"
+  },
+  "settings": [
+    {
+      "id": "shade",
+      "type": "dropdown",
+      "title": {
+        "en": "\"Shade\" preset slat angle"
+      },
+      "value": "44",
+      "values": [
+        {
+          "id": "22",
+          "title": {
+            "en": "22°"
+          }
+        },
+        {
+          "id": "44",
+          "title": {
+            "en": "44°"
+          }
+        },
+        {
+          "id": "66",
+          "title": {
+            "en": "66°"
+          }
+        }
+      ]
+    },
+    {
+      "id": "presets",
+      "type": "checkbox",
+      "title": {
+        "en": "Show Open / Shade / Close buttons"
+      },
+      "value": true
+    }
+  ],
+  "api": {
+    "getShutters": {
+      "method": "GET",
+      "path": "/shutters"
+    },
+    "preset": {
+      "method": "POST",
+      "path": "/preset"
+    }
+  },
+  "height": 170,
+  "devices": {
+    "type": "app",
+    "singular": false,
+    "filter": {
+      "class": "windowcoverings"
+    }
+  }
+}

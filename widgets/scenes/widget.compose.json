@@ -1,0 +1,114 @@
+{
+  "name": {
+    "en": "Legrand scenes"
+  },
+  "settings": [
+    {
+      "id": "all",
+      "type": "checkbox",
+      "title": {
+        "en": "Show all scenes"
+      },
+      "value": true
+    },
+    {
+      "id": "columns",
+      "type": "dropdown",
+      "title": {
+        "en": "Columns"
+      },
+      "value": "3",
+      "values": [
+        {
+          "id": "2",
+          "title": {
+            "en": "2"
+          }
+        },
+        {
+          "id": "3",
+          "title": {
+            "en": "3"
+          }
+        },
+        {
+          "id": "4",
+          "title": {
+            "en": "4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene1",
+      "type": "autocomplete",
+      "title": {
+        "en": "Scene 1"
+      },
+      "hint": {
+        "en": "Used when \"Show all scenes\" is off."
+      }
+    },
+    {
+      "id": "scene2",
+      "type": "autocomplete",
+      "title": {
+        "en": "Scene 2"
+      },
+      "hint": {
+        "en": "Used when \"Show all scenes\" is off."
+      }
+    },
+    {
+      "id": "scene3",
+      "type": "autocomplete",
+      "title": {
+        "en": "Scene 3"
+      },
+      "hint": {
+        "en": "Used when \"Show all scenes\" is off."
+      }
+    },
+    {
+      "id": "scene4",
+      "type": "autocomplete",
+      "title": {
+        "en": "Scene 4"
+      },
+      "hint": {
+        "en": "Used when \"Show all scenes\" is off."
+      }
+    },
+    {
+      "id": "scene5",
+      "type": "autocomplete",
+      "title": {
+        "en": "Scene 5"
+      },
+      "hint": {
+        "en": "Used when \"Show all scenes\" is off."
+      }
+    },
+    {
+      "id": "scene6",
+      "type": "autocomplete",
+      "title": {
+        "en": "Scene 6"
+      },
+      "hint": {
+        "en": "Used when \"Show all scenes\" is off."
+      }
+    }
+  ],
+  "api": {
+    "getScenes": {
+      "method": "GET",
+      "path": "/scenes"
+    },
+    "run": {
+      "method": "POST",
+      "path": "/run"
+    }
+  },
+  "height": 120
+}

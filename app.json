@@ -1,8 +1,8 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.legrand.hap",
-  "version": "0.8.1",
-  "compatibility": ">=12.0.0",
+  "version": "0.9.0",
+  "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [
     "local"
@@ -17,9 +17,11 @@
     "lights"
   ],
   "brandColor": "#DA5046",
-  "permissions": [],
+  "permissions": [
+    "homey:manager:api"
+  ],
   "author": {
-    "name": "Gonçalo"
+    "name": "Community developer"
   },
   "api": {
     "getLog": {
@@ -116,7 +118,7 @@
       "blinds"
     ]
   },
-  "source": "https://github.com/goncalb/com.legrand.hap",
+  "source": "https://github.com/",
   "license": "GPL-3.0",
   "flow": {
     "triggers": [
@@ -987,6 +989,223 @@
       "id": "thermostat"
     }
   ],
+  "widgets": {
+    "heating": {
+      "name": {
+        "en": "Legrand heating"
+      },
+      "settings": [
+        {
+          "id": "chips",
+          "type": "checkbox",
+          "title": {
+            "en": "Show profile buttons"
+          },
+          "value": true
+        }
+      ],
+      "api": {
+        "getState": {
+          "method": "GET",
+          "path": "/state"
+        },
+        "override": {
+          "method": "POST",
+          "path": "/override"
+        },
+        "resume": {
+          "method": "POST",
+          "path": "/resume"
+        }
+      },
+      "height": 200,
+      "devices": {
+        "type": "app",
+        "singular": false,
+        "filter": {
+          "class": "thermostat"
+        }
+      },
+      "id": "heating"
+    },
+    "scenes": {
+      "name": {
+        "en": "Legrand scenes"
+      },
+      "settings": [
+        {
+          "id": "all",
+          "type": "checkbox",
+          "title": {
+            "en": "Show all scenes"
+          },
+          "value": true
+        },
+        {
+          "id": "columns",
+          "type": "dropdown",
+          "title": {
+            "en": "Columns"
+          },
+          "value": "3",
+          "values": [
+            {
+              "id": "2",
+              "title": {
+                "en": "2"
+              }
+            },
+            {
+              "id": "3",
+              "title": {
+                "en": "3"
+              }
+            },
+            {
+              "id": "4",
+              "title": {
+                "en": "4"
+              }
+            }
+          ]
+        },
+        {
+          "id": "scene1",
+          "type": "autocomplete",
+          "title": {
+            "en": "Scene 1"
+          },
+          "hint": {
+            "en": "Used when \"Show all scenes\" is off."
+          }
+        },
+        {
+          "id": "scene2",
+          "type": "autocomplete",
+          "title": {
+            "en": "Scene 2"
+          },
+          "hint": {
+            "en": "Used when \"Show all scenes\" is off."
+          }
+        },
+        {
+          "id": "scene3",
+          "type": "autocomplete",
+          "title": {
+            "en": "Scene 3"
+          },
+          "hint": {
+            "en": "Used when \"Show all scenes\" is off."
+          }
+        },
+        {
+          "id": "scene4",
+          "type": "autocomplete",
+          "title": {
+            "en": "Scene 4"
+          },
+          "hint": {
+            "en": "Used when \"Show all scenes\" is off."
+          }
+        },
+        {
+          "id": "scene5",
+          "type": "autocomplete",
+          "title": {
+            "en": "Scene 5"
+          },
+          "hint": {
+            "en": "Used when \"Show all scenes\" is off."
+          }
+        },
+        {
+          "id": "scene6",
+          "type": "autocomplete",
+          "title": {
+            "en": "Scene 6"
+          },
+          "hint": {
+            "en": "Used when \"Show all scenes\" is off."
+          }
+        }
+      ],
+      "api": {
+        "getScenes": {
+          "method": "GET",
+          "path": "/scenes"
+        },
+        "run": {
+          "method": "POST",
+          "path": "/run"
+        }
+      },
+      "height": 120,
+      "id": "scenes"
+    },
+    "shutters": {
+      "name": {
+        "en": "Legrand shutters"
+      },
+      "settings": [
+        {
+          "id": "shade",
+          "type": "dropdown",
+          "title": {
+            "en": "\"Shade\" preset slat angle"
+          },
+          "value": "44",
+          "values": [
+            {
+              "id": "22",
+              "title": {
+                "en": "22°"
+              }
+            },
+            {
+              "id": "44",
+              "title": {
+                "en": "44°"
+              }
+            },
+            {
+              "id": "66",
+              "title": {
+                "en": "66°"
+              }
+            }
+          ]
+        },
+        {
+          "id": "presets",
+          "type": "checkbox",
+          "title": {
+            "en": "Show Open / Shade / Close buttons"
+          },
+          "value": true
+        }
+      ],
+      "api": {
+        "getShutters": {
+          "method": "GET",
+          "path": "/shutters"
+        },
+        "preset": {
+          "method": "POST",
+          "path": "/preset"
+        }
+      },
+      "height": 170,
+      "devices": {
+        "type": "app",
+        "singular": false,
+        "filter": {
+          "class": "windowcoverings"
+        }
+      },
+      "id": "shutters"
+    }
+  },
   "capabilities": {
     "shutter_moving": {
       "type": "boolean",

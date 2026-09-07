@@ -1,0 +1,37 @@
+{
+  "name": {
+    "en": "Legrand heating"
+  },
+  "settings": [
+    {
+      "id": "chips",
+      "type": "checkbox",
+      "title": {
+        "en": "Show profile buttons"
+      },
+      "value": true
+    }
+  ],
+  "api": {
+    "getState": {
+      "method": "GET",
+      "path": "/state"
+    },
+    "override": {
+      "method": "POST",
+      "path": "/override"
+    },
+    "resume": {
+      "method": "POST",
+      "path": "/resume"
+    }
+  },
+  "height": 200,
+  "devices": {
+    "type": "app",
+    "singular": false,
+    "filter": {
+      "class": "thermostat"
+    }
+  }
+}

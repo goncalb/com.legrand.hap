@@ -137,7 +137,7 @@
     <div class="section">Plan</div>
     <div class="group">
       <div class="row"><div class="main"><div class="t">Heating plan active</div><div class="d">Homey applies the profiles below to every room that follows the plan.</div></div>
-        <label class="sw"><input type="checkbox" id="h-enabled" /><span></span></label></div>
+        <label class="sw"><input type="checkbox" id="h-enabled" onchange="renderPlans()" /><span></span></label></div>
       <div class="row"><div class="main"><div class="t" id="h-now" style="color:#555">—</div></div></div>
       <div class="row"><div class="main"><div class="t">Timeline notifications</div><div class="d">Post a note on Homey's timeline at every profile change (schedule and overrides).</div></div>
         <label class="sw"><input type="checkbox" id="h-notify" onchange="HomeyRef.set('heatingNotify', this.checked)" /><span></span></label></div>
@@ -194,7 +194,7 @@
       <div class="section">Pair <span id="pairname" style="text-transform:none; letter-spacing:0"></span></div>
       <div class="group">
         <div class="row" id="pairmanual" style="display:none"><div class="main"><div class="d">HomeKit id and IP (from the hap-probe "discover" output or the app log)</div>
-          <div style="display:flex; gap:6px; margin-top:6px"><input id="pairid" type="text" placeholder="00:91:FF:AC:59:AD" style="flex:1" /><input id="pairaddr" type="text" placeholder="192.168.1.80" style="width:140px" /></div></div></div>
+          <div style="display:flex; gap:6px; margin-top:6px"><input id="pairid" type="text" placeholder="AA:BB:CC:11:22:33" style="flex:1" /><input id="pairaddr" type="text" placeholder="192.168.1.80" style="width:140px" /></div></div></div>
         <div class="row"><input id="pairpin" type="text" placeholder="XXX-XX-XXX" inputmode="numeric" class="full" /></div>
         <div class="row link" onclick="doPair()"><div class="main"><div class="t">Pair with this code</div></div></div>
         <div class="row link" onclick="document.getElementById('pairbox').style.display='none'"><div class="main"><div class="t" style="color:#8a8a8e">Cancel</div></div></div>
@@ -633,9 +633,10 @@
       const open = hOpenPlan === p.id, active = H.activePlan === p.id;
       const row = document.createElement('div'); row.className = 'row'; row.style.display = 'block';
       let html = '<div style="display:flex; align-items:center; gap:8px">' +
-        '<div style="flex:1" onclick="togglePlan(\'' + p.id + '\')"><div class="t">' + esc(p.name) + (active ? '<span class="chip" style="background:#d9f2e3; color:#1e7a45">active</span>' : '') + '</div>' +
+        '<div style="flex:1" onclick="togglePlan(\'' + p.id + '\')"><div class="t">' + esc(p.name) +
+        (active ? (document.getElementById('h-enabled').checked ? '<span class="chip" style="background:#d9f2e3; color:#1e7a45">active</span>' : '<span class="chip" style="background:#ececef; color:#555">selected</span>') : '') + '</div>' +
         '<div class="d">' + (open ? 'tap a day below to edit' : 'tap to view') + '</div></div>' +
-        (active ? '' : '<button class="text" onclick="activatePlan(\'' + p.id + '\')">Activate</button>') +
+        (active ? '' : '<button class="text" onclick="activatePlan(\'' + p.id + '\')">Select</button>') +
         '<span class="chev" onclick="togglePlan(\'' + p.id + '\')">' + (open ? '⌄' : '›') + '</span></div>';
       if (!open) {
         html += '<div style="display:flex; gap:2px; margin-top:6px">' + HDAYS.map(d => '<div style="flex:1">' + bar(p.days[d] || []) + '</div>').join('') + '</div>';

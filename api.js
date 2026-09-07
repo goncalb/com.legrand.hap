@@ -123,7 +123,7 @@ module.exports = {
         rooms.push({ serial, name: dev.getName(), target: dev.getCapabilityValue('target_temperature'),
           manual: homey.app.heating.isManual(serial), ...(cfg.rooms[serial] || { follow: true, temps: { comfort: 20, eco: 18.5, night: 17 } }) });
       }
-    } catch (e) { /* no thermostat driver */ }
+    } catch { /* ignore */ }
     return { config: cfg, rooms, status: homey.app.heating.status() };
   },
   async saveHeating({ homey, body }) { return homey.app.heating.save(body.config); },

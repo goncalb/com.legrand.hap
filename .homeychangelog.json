@@ -1,0 +1,5 @@
+{
+  "0.9.0": { "en": "Dashboard widgets: Scenes, Shutters (live shutter drawings with Open/Shade/Close) and Heating. Native device and scene pickers." },
+  "0.8.1": { "en": "Smarther thermostat support, multiple HomeKit devices, heating plan with weekly schedule and overrides, scenes with icons, redesigned settings." },
+  "0.1.0": { "en": "Initial release: local control of Legrand lights, shutters with slat tilt, and remotes through the Legrand gateway." }
+}
