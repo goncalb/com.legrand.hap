@@ -81,7 +81,7 @@
     {
       "type": "group",
       "label": {
-        "en": "Learned travel times"
+        "en": "Travel times (used by the Shutters widget animation)"
       },
       "children": [
         {
@@ -113,7 +113,7 @@
             "en": "s"
           },
           "hint": {
-            "en": "0 = use the learned value. Orientable shutters cannot be timed on a full close because the gateway reports the position only after the slats have re-opened — set the time here if the learned value looks wrong."
+            "en": "Seconds for a full 0 → 100 % travel. 0 = use the learned value above. A manual value takes precedence and pauses learning for this direction."
           }
         },
         {
@@ -127,6 +127,9 @@
           "max": 300,
           "units": {
             "en": "s"
+          },
+          "hint": {
+            "en": "Seconds for a full 100 → 0 % travel. 0 = use the learned value above. Orientable shutters cannot be timed on a full close (the gateway reports the position only after the slats have re-opened), so set the time here if learning gives a value that is too high."
           }
         }
       ]

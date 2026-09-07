@@ -8,18 +8,20 @@
   }
   html, body { margin: 0; overflow: hidden; }
   body { font-family: var(--homey-font-family-default, -apple-system, sans-serif); color: var(--lg-text); font-size: 12px; }
-  .wrap { padding: 8px 10px; }
-  .hd { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .wrap { padding: 10px 12px; }
+  .hd { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
   .hd .t { font-weight: 600; font-size: 14px; color: var(--lg-brand); }
   .hd .s { color: var(--lg-muted); font-size: 11px; }
-  .chips { display: flex; gap: 5px; margin-bottom: 6px; }
+  .chips { display: flex; gap: 5px; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 0.5px solid var(--lg-border); }
   .chip { flex: 1; text-align: center; padding: 5px 0; border-radius: 14px; border: 0.5px solid var(--lg-border); font-size: 11px; cursor: pointer; background: var(--lg-card); color: var(--lg-text); }
   .chip.comfort.on { background: #f4b183; color: #5a2e0c; border-color: #f4b183; }
   .chip.eco.on { background: #8fd2b8; color: #114d33; border-color: #8fd2b8; }
   .chip.night.on { background: #9bb3e8; color: #1e2d5a; border-color: #9bb3e8; }
   .chip.away.on { background: #b8bfd6; color: #2a2f40; border-color: #b8bfd6; }
   .chip.frost.on { background: #9bd0e8; color: #0f3c52; border-color: #9bd0e8; }
-  .room { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-top: 0.5px solid var(--lg-border); }
+  .room { display: flex; align-items: center; gap: 8px; padding: 9px 10px; margin: 6px 0; border-radius: 10px; background: var(--lg-card); border: 0.5px solid var(--lg-border); }
+  .room .n { font-weight: 500; }
+  .rooms-hd { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--lg-muted); margin: 2px 2px 4px; }
   .room .n { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .room .v { color: var(--lg-muted); white-space: nowrap; }
   .tag { font-size: 10px; border-radius: 6px; padding: 1px 5px; background: #ffe8c2; margin-left: 4px; }
@@ -30,6 +32,7 @@
 <div class="wrap">
   <div class="hd"><span class="t">Heating</span><span class="s" id="status">…</span></div>
   <div class="chips" id="chips"></div>
+  <div class="rooms-hd">Rooms</div>
   <div id="rooms"></div>
 </div>
 <script type="text/javascript">
@@ -56,7 +59,7 @@
       el.innerHTML += '<div class="room"><span class="n">' + r.name.replace(/</g, '&lt;') + tag + '</span>' +
         '<span class="v">' + (r.temp != null ? r.temp.toFixed(1) : '–') + ' → ' + (r.target != null ? r.target : '–') + '</span><span style="width:16px;text-align:center">' + (r.heating ? '🔥' : '') + '</span></div>';
     }
-    if (HomeyRef.setHeight) HomeyRef.setHeight(40 + (S.chips === false ? 0 : 34) + Math.max(1, rooms.length) * 30 + 12);
+    if (HomeyRef.setHeight) HomeyRef.setHeight(50 + (S.chips === false ? 0 : 54) + 18 + Math.max(1, rooms.length) * 46 + 12);
   }
   function load() { HomeyRef.api('GET', '/state?ids=' + encodeURIComponent(ids.join(','))).then(render).catch(() => {}); }
   function setProfile(p) { HomeyRef.api('POST', '/override', { profile: p, duration: 'next' }).then(() => setTimeout(load, 800)); }
