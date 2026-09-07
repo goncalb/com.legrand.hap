@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.9.1] — 2026-09-07
+
+### Fixed
+- Shutters widget: room names ("Living Room", "Master Bedroom", …) no longer split across lines.
+
 ## [0.9.0] — 2026-09-07
 
 ### Added

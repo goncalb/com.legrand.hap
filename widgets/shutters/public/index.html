@@ -6,7 +6,7 @@
   .strip { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; }
   .card.sel { border: 2px solid #DA5046; background: #fdf1ef; }
   .card { cursor: pointer; user-select: none; flex: 0 0 calc((100% - 16px) / 3); max-width: calc((100% - 16px) / 3); box-sizing: border-box; border: 0.5px solid var(--homey-color-mono-200, #e3e3e3); border-radius: 10px; padding: 6px 4px; text-align: center; background: var(--homey-color-mono-000, #fff); }
-  .card .nm { font-size: 11px; font-weight: 600; color: #DA5046; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 26px; }
+  .card .nm { font-size: 11px; font-weight: 600; color: #DA5046; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 26px; white-space: normal; overflow-wrap: normal; word-break: keep-all; }
   .card .v { font-size: 11px; color: var(--homey-text-color-light, #8a8a8e); }
   .card svg { display: block; margin: 4px auto 2px; }
   .presets { display: flex; gap: 6px; padding: 0 8px 8px; }
@@ -28,6 +28,19 @@
     const cleaned = String(name).replace(/\b(roller\s+)?(shutters?|blinds?|rolling\s+shutter)\b/gi, '').replace(/\s{2,}/g, ' ').replace(/^[\s\-–·]+|[\s\-–·]+$/g, '').trim();
     return cleaned || name;   // never blank a name that was only "Shutter"
   }
+  // Keep room names on one line: a room word is glued to the word before it with a non-breaking space,
+  // so "Front Window Living Room" can wrap as "Front Window / Living Room" but never "Living / Room".
+  const ROOM_WORDS = ['room', 'bedroom', 'bathroom', 'kitchen', 'office', 'hall', 'hallway', 'lounge', 'study', 'nursery', 'garage', 'terrace', 'balcony', 'suite'];
+  function noSplit(name) {
+    const words = String(name).split(' ').filter(Boolean);
+    const out = [];
+    for (const w of words) {
+      if (out.length && ROOM_WORDS.includes(w.toLowerCase().replace(/[^a-z]/g, ''))) out[out.length - 1] += '\u00a0' + w;
+      else out.push(w);
+    }
+    return out.join(' ');
+  }
+
   function curtainH(position) { return 44 * Math.max(0, Math.min(100, 100 - position)) / 100; }
   function slatPattern(id, tilt) {
     const gap = tilt == null ? 0.5 : Math.max(0.1, Math.min(0.55, (tilt / 88) * 0.55));
@@ -42,6 +55,7 @@
       '<g class="curtain" id="cu-' + domId(d.id) + '"><rect class="c" x="7.5" y="11" width="45" height="' + h + '" fill="url(#sl-' + domId(d.id) + ')"/><rect class="b" x="7.5" y="' + (11 + h - 2) + '" width="45" height="2.5" fill="#9a9a9e"/></g>' +
       '<rect x="3" y="5" width="54" height="7" rx="2" fill="#b9b9bd"/></svg>';
   }
+
   /** While the motor reports movement, loop the curtain in the direction of travel until it reports stopped. */
   const FULL_TRAVEL_MS = 20000;   // one full-height pass ≈ a real shutter run (~20 s); partial passes scale with distance
   const loops = new Map();   // id -> { raf, from, to, start }
@@ -77,7 +91,7 @@
       lastKey = key;
       el.innerHTML = filt.length ? '' : '<div class="empty">No shutters selected.</div>';
       for (const d of filt) {
-        el.innerHTML += '<div class="card' + (selected.has(d.id) ? ' sel' : '') + '" id="card-' + domId(d.id) + '" onclick="toggleSel(\'' + d.id + '\')"><div class="nm" title="' + d.name.replace(/"/g, '&quot;') + '">' + shortName(d.name).replace(/</g, '&lt;') + '</div>' + shutterSvg(d) + '<div class="v" id="v-' + domId(d.id) + '"></div></div>';
+        el.innerHTML += '<div class="card' + (selected.has(d.id) ? ' sel' : '') + '" id="card-' + domId(d.id) + '" onclick="toggleSel(\'' + d.id + '\')"><div class="nm" title="' + d.name.replace(/"/g, '&quot;') + '">' + noSplit(shortName(d.name)).replace(/</g, '&lt;') + '</div>' + shutterSvg(d) + '<div class="v" id="v-' + domId(d.id) + '"></div></div>';
       }
     }
     anyMoving = false;
@@ -111,7 +125,7 @@
   }
   function updatePresetLabels() {
     const n = selected.size;
-    document.getElementById('hint').textContent = n ? (n + ' selected — tap a shutter to deselect') : 'Tap shutters to select — none selected = all';
+    document.getElementById('hint').textContent = (n ? (n + ' selected — tap a shutter to deselect') : 'Tap shutters to select — none selected = all');
   }
   function preset(p) {
     // apply to the tapped selection, or to every shown shutter when nothing is selected
