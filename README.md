@@ -101,8 +101,16 @@ Three widgets for Homey Dashboards, each configurable per instance (which device
 
 | Scenes | Shutters | Heating |
 |---|---|---|
-| ![Scenes widget](docs/images/widget-scenes.png) | ![Shutters widget](docs/images/widget-shutters.png) | ![Heating widget](docs/images/widget-heating.png) |
-| Tiles with the scene's emoji; tap to run. Show all scenes or pick up to six. | Live-drawn windows: the sky follows the real time of day (dawn, day, golden hour, night), the curtain follows position, the slat gaps follow tilt (sky visible through open slats), a ceiling pendant glows when a lamp in that room is on. Animates while the motor runs at each shutter's learned travel speed. Tap to select, then **Open / Shade / Close** — with nothing selected the buttons act on all shown shutters. | Current profile and next switch, profile chips to override, a resume button, and one row per room with temperature → target, a flame while heating and manual/off tags. |
+| ![Scenes widget (screenshot)](docs/images/widget-scenes.png) | ![Shutters widget (screenshot)](docs/images/widget-shutters.png) | ![Heating widget (screenshot)](docs/images/widget-heating.png) |
+| Tiles with the scene's emoji; tap to run. Show all scenes or pick up to six. | Live-drawn windows (real screenshot): the sky follows the time of day (dawn, day, golden hour, night), the curtain follows position, the slat gaps follow tilt (sky visible through open slats), a ceiling pendant lights up when a lamp in that room is on. Tap to select, then Open / Shade / Close. Animates while the motor runs at each shutter's learned travel speed. Tap to select, then **Open / Shade / Close** — with nothing selected the buttons act on all shown shutters. | Current profile and next switch, profile chips to override, a resume button, and one row per room with temperature → target, a flame while heating and manual/off tags. |
+
+#### How to read a window
+
+![Window states](docs/images/window-states.png)
+
+Rows: the sky at dawn, day, dusk and night (from Homey's sunrise/sunset). Columns: open, closed (88° = slats shut),
+half down, closed with slats flat (0° — the sky shows through the slats), half down with slats mid-way, and a room
+lamp on (pendant lit, light cone over the window).
 
 ### Roadmap — widgets under consideration
 
