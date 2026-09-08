@@ -91,6 +91,7 @@
 <body>
   <div class="tabs">
     <button id="tab-devices" class="active" onclick="showTab('devices')">Devices</button>
+    <button id="tab-lights" onclick="showTab('lights')">Lights</button>
     <button id="tab-scenes" onclick="showTab('scenes')">Scenes</button>
     <button id="tab-heating" onclick="showTab('heating')">Heating</button>
     <button id="tab-log" onclick="showTab('log')">Log</button>
@@ -108,7 +109,15 @@
     <div class="section">Sensors</div><div class="group" id="list-sensor"></div>
     <div class="section">&nbsp;</div>
     <div class="group"><div class="row link" onclick="refreshDb()"><div class="main"><div class="t">Refresh from gateway</div></div><span id="dbstate" class="v"></span></div></div>
+  </div>
 
+  <!-- LIGHTS -->
+  <div id="lights" class="tab">
+    <div class="section">Search</div>
+    <div class="group"><div class="row"><input id="lightsearch" type="search" placeholder="Room, area or lamp name…" class="full" oninput="filterLights()" /></div></div>
+    <div class="section" style="margin-top:14px">All lights on Homey</div>
+    <div class="group"><div class="row"><div class="main"><div class="d">For each lamp: the <b>type</b> decides how the Lights widget draws it; the <b>Window glow</b> switch decides whether it lights the pendant on the Shutters widget's windows of its room.</div></div></div></div>
+    <div id="lightlist"><div class="group"><div class="row"><div class="main muted">Loading…</div></div></div></div>
     <div class="section">Rooms &amp; lights <span style="text-transform:none; letter-spacing:0">— window glow in the Shutters widget</span></div>
     <div class="group" id="roomlist"><div class="row"><div class="main muted">Loading…</div></div></div>
   </div>
@@ -129,6 +138,11 @@
         <button class="text" style="margin-left:auto; padding:2px 6px !important; font-size:11px !important" onclick="setAllEntries(true)">Select all</button>
         <button class="text" style="padding:2px 6px !important; font-size:11px !important" onclick="setAllEntries(false)">None</button></div>
       <div class="group" id="sceneentries"></div>
+      <div class="section" style="display:flex; align-items:center; gap:8px">Lights on Homey <span style="text-transform:none; letter-spacing:0">— any lamp, a room "all off", or a Homey mood</span>
+        <button class="text" style="margin-left:auto; padding:2px 6px !important; font-size:11px !important" onclick="captureLights()">Capture current</button></div>
+      <div class="group" id="scenelights"><div class="row"><div class="main muted">Loading…</div></div></div>
+      <div class="section">Climate on Homey <span style="text-transform:none; letter-spacing:0">— thermostats and air conditioners from other apps</span></div>
+      <div class="group" id="sceneclimate"><div class="row"><div class="main muted">Loading…</div></div></div>
       <div class="actions">
         <button class="primary" onclick="saveScene()">Save scene</button>
         <button onclick="cancelScene()">Cancel</button>
@@ -178,7 +192,8 @@
       <button onclick="loadLog()">Reload</button>
       <button onclick="clearLog()">Clear</button>
       <label class="sw" title="auto-refresh"><input type="checkbox" id="auto" checked /><span></span></label>
-    </div></div>
+    </div>
+    <div class="row"><div class="main"><div class="t">Show debug entries</div></div><label class="sw"><input type="checkbox" id="showdebug" onchange="loadLog()" /><span></span></label></div></div>
     <div class="section">Activity</div>
     <div id="log"></div>
   </div>
@@ -290,7 +305,7 @@
 
 <script type="text/javascript">
   let HomeyRef;
-  const TABS = { devices: 'devices', scenes: 'scenes', heating: 'heating', log: 'log-tab', gateway: 'gateway' };
+  const TABS = { devices: 'devices', lights: 'lights', scenes: 'scenes', heating: 'heating', log: 'log-tab', gateway: 'gateway' };
 
   function showTab(name) {
     for (const [k, id] of Object.entries(TABS)) {
@@ -299,6 +314,7 @@
     }
     if (name === 'log') loadLog();
     if (name === 'scenes') loadScenes();
+    if (name === 'lights') { loadLights(); loadRooms(); }
     if (name === 'heating') loadHeating();
     if (name === 'gateway') pairingStatus();
   }
@@ -313,10 +329,11 @@
     Homey.get('exposeStandardTilt', (err, v) => { if (!err) document.getElementById('exposeStd').checked = !!v; });
     Homey.get('heatingNotify', (err, v) => { if (!err) document.getElementById('h-notify').checked = !!v; });
     Homey.get('heatingNotifyRooms', (err, v) => { if (!err) document.getElementById('h-notify-rooms').checked = !!v; });
-    pairingStatus(); loadDevices(); loadRooms(); loadLog();
+    pairingStatus(); loadDevices(); loadRooms(); loadLights(); loadLog();
     setInterval(() => {
       if (document.getElementById('log-tab').classList.contains('active') && document.getElementById('auto').checked) loadLog();
-      if (document.getElementById('devices').classList.contains('active') && !document.querySelector('#devices input[type=text]') && !document.querySelector('#roomlist details[open]')) loadDevices();
+      if (document.getElementById('devices').classList.contains('active') && !document.querySelector('#devices input[type=text]')) loadDevices();
+      if (document.getElementById('lights').classList.contains('active') && !document.querySelector('#roomlist details[open]')) loadLights();
     }, 5000);
   }
 
@@ -420,6 +437,56 @@
         '') + '</div>';
   }
 
+  /* ---------- Lights tab ---------- */
+  const TYPE_LABEL = { ceiling: 'Ceiling', floor: 'Floor lamp', table: 'Table lamp', bulb: 'Bulb', strip: 'LED strip', spot: 'Spot', switch: 'Wall switch', wall: 'Wall light', outdoor: 'Outdoor' };
+  function loadLights() {
+    HomeyRef.api('GET', '/lights-tab', null, (err, res) => {
+      const el = document.getElementById('lightlist');
+      if (err) { el.innerHTML = '<div class="group"><div class="row"><div class="main muted">' + esc(err.message) + '</div></div></div>'; return; }
+      const openGroups = new Set([...el.querySelectorAll('details[open][data-group]')].map((d) => d.dataset.group));
+      el.innerHTML = res.rooms.map((r) => '<div class="section" style="margin-top:10px; display:flex; align-items:baseline">' + esc(r.path) + ' <span style="text-transform:none; letter-spacing:0">· ' + r.lights.length + '</span><span style="margin-left:auto; text-transform:none; letter-spacing:0; font-size:10px">Type · Window glow</span></div><div class="group">' +
+        (() => {
+          const lampRow = (l, indent) => '<div class="row"' + (indent ? ' style="padding-left:28px; background:#fafafb"' : '') + '><div class="main"><div class="t"><span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:' + (l.on ? l.colour : '#d1d1d6') + '; margin-right:6px; vertical-align:middle"></span>' + esc(l.name) + (l.group ? ' <span class="pill">group</span>' : '') + '</div>' +
+            '<div class="d">' + (l.available ? (l.on ? 'on' + (l.dim != null && l.hasDim ? ' · ' + l.dim + ' %' : '') : 'off') : 'unreachable') + (l.hasColour ? ' · colour' : l.hasTemp ? ' · white' : '') + '</div></div>' +
+            '<select onchange="setType(\'' + esc(l.id) + '\', this.value)" style="width:110px; margin-right:8px">' + (l.memberOf ? '<option value=""' + (l.inherited ? ' selected' : '') + '>Same as group</option>' : '') + res.types.map((t) => '<option value="' + t + '"' + (l.type === t ? ' selected' : '') + '>' + TYPE_LABEL[t] + (l.type === t && !l.inherited && l.guessed ? ' (auto)' : '') + '</option>').join('') + '</select>' +
+            (r.hasShutters ? '<label class="sw" title="Counts for the window glow"><input type="checkbox" ' + (l.glow ? 'checked' : '') + ' onchange="setGlow(\'' + esc(l.id) + '\', this.checked)" /><span></span></label>' : '<span style="width:44px"></span>') + '</div>';
+          let html = '', lastArea = null;
+          for (const l of r.lights) {
+            if (l.memberOf) continue;                                   // rendered under its group
+            if (l.area && l.area !== lastArea) { html += '<div class="row" style="padding:6px 12px 2px; background:#fafafb"><div class="main"><div class="d" style="text-transform:uppercase; letter-spacing:.04em; font-size:10px">' + esc(l.area) + '</div></div></div>'; lastArea = l.area; }
+            html += lampRow(l, false);
+            if (l.group) {
+              const members = r.lights.filter((m) => m.memberOf === l.id);
+              if (members.length) html += '<details style="border:none" data-group="' + esc(l.id) + '"' + (openGroups.has(l.id) ? ' open' : '') + '><summary style="padding:4px 12px 4px 28px; font-size:11px; color:#2b6de8">' + members.length + ' members</summary>' + members.map((m) => lampRow(m, true)).join('') + '</details>';
+            }
+          }
+          return html;
+        })() + '</div>').join('');
+      filterLights();
+    });
+  }
+  function filterLights() {
+    const q = (document.getElementById('lightsearch').value || '').trim().toLowerCase();
+    const el = document.getElementById('lightlist');
+    // sections come in pairs: <div class="section">room</div><div class="group">rows</div>
+    const sections = [...el.querySelectorAll(':scope > .section')];
+    for (const sec of sections) {
+      const grp = sec.nextElementSibling;
+      if (!q) { sec.style.display = ''; grp.style.display = ''; grp.querySelectorAll('.row, details').forEach((r) => { r.style.display = ''; }); continue; }
+      const roomHit = sec.textContent.toLowerCase().includes(q);
+      let any = roomHit;
+      grp.querySelectorAll(':scope > .row, :scope > details').forEach((node) => {
+        const hit = roomHit || node.textContent.toLowerCase().includes(q);
+        node.style.display = hit ? '' : 'none';
+        if (node.tagName === 'DETAILS' && hit && !roomHit) node.open = true;
+        any = any || hit;
+      });
+      sec.style.display = any ? '' : 'none'; grp.style.display = any ? '' : 'none';
+    }
+  }
+  function setType(id, type) { HomeyRef.api('POST', '/light-type', { id, type }, (err) => { if (err) HomeyRef.alert(err.message); else loadLights(); }); }
+  function setGlow(id, glow) { HomeyRef.api('POST', '/light-glow', { id, glow }, (err) => { if (err) HomeyRef.alert(err.message); else loadRooms(); }); }
+
   /* ---------- rooms & lights (window glow in the Shutters widget) ---------- */
   function loadRooms() {
     HomeyRef.api('GET', '/room-lights', null, (err, rooms) => {
@@ -470,7 +537,7 @@
   }
 
   /* ---------- scenes ---------- */
-  let scenes = [], editing = null, editEntries = [];
+  let scenes = [], editing = null, editEntries = [], editLights = [], sceneLightsData = [], editClimate = [], sceneClimateData = [];
   const TILTS = [0, 22, 44, 66, 88];
 
   const EMOJIS = ['🌙','☀️','🌅','🌇','🏠','🚪','🛏️','🍽️','🎬','📺','🧘','❄️','🔥','🌧️','🎉','👶','🧹','✈️'];
@@ -485,7 +552,7 @@
       const el = document.getElementById('scenelist');
       el.innerHTML = scenes.map(sc =>
         '<div class="row"><div class="main" onclick="editScene(\'' + sc.id + '\')"><div class="t">' + (sc.icon ? esc(sc.icon) + ' ' : '') + esc(sc.name) + '</div>' +
-        '<div class="d">' + sc.entries.length + ' device' + (sc.entries.length === 1 ? '' : 's') + '</div></div>' +
+        '<div class="d">' + sc.entries.length + ' device' + (sc.entries.length === 1 ? '' : 's') + ((sc.lights || []).length ? ' · ' + sc.lights.length + ' light entr' + (sc.lights.length === 1 ? 'y' : 'ies') : '') + ((sc.climate || []).length ? ' · ' + sc.climate.length + ' climate' : '') + '</div></div>' +
         '<button class="text" onclick="runScene(\'' + sc.id + '\')">Run</button>' +
         '<button class="text" style="color:#8a8a8e !important" onclick="duplicateScene(\'' + sc.id + '\')">Copy</button>' +
         '<span class="chev" onclick="editScene(\'' + sc.id + '\')">›</span></div>').join('') +
@@ -534,12 +601,84 @@
 
   function duplicateScene(id) {
     const sc = scenes.find(s => s.id === id); if (!sc) return;
-    scenes.push({ name: sc.name + ' (copy)', icon: sc.icon || '', entries: JSON.parse(JSON.stringify(sc.entries)) });
+    scenes.push({ name: sc.name + ' (copy)', icon: sc.icon || '', entries: JSON.parse(JSON.stringify(sc.entries)), lights: JSON.parse(JSON.stringify(sc.lights || [])), climate: JSON.parse(JSON.stringify(sc.climate || [])) });
     HomeyRef.api('POST', '/scene-save', { scenes }, (err) => { if (err) return HomeyRef.alert('Copy failed: ' + err.message); loadScenes(); });
   }
   function setAllEntries(on) { editEntries.forEach(e => e.enabled = on); renderEntries(); }
+
+  /* scene editor: lights on Homey (any app). editLights = [{ kind:'lamp', id, on, dim, hue, sat, temp } | { kind:'roomOff', zoneId } | { kind:'mood', id }] */
+  const lightEntry = (kind, id) => editLights.find((e) => e.kind === kind && (kind === 'roomOff' ? e.zoneId === id : e.id === id));
+  function renderSceneLights() {
+    const el = document.getElementById('scenelights');
+    if (!sceneLightsData.length) { el.innerHTML = '<div class="row"><div class="main muted">No lights found on Homey.</div></div>'; return; }
+    el.innerHTML = sceneLightsData.map((z) => {
+      const off = !!lightEntry('roomOff', z.zoneId);
+      const moodSel = (editLights.find((e) => e.kind === 'mood' && z.moods.some((m) => m.id === e.id)) || {}).id || '';
+      return '<details' + (z.lamps.some((l) => lightEntry('lamp', l.id)) || off || moodSel ? ' open' : '') + '><summary><span style="flex:1">' + esc(z.name) + '</span><span class="muted">' + z.lamps.length + ' lamp' + (z.lamps.length === 1 ? '' : 's') + '</span></summary>' +
+        '<div class="row"><div class="main"><div class="t">All off</div><div class="d">Turn every light of this room off</div></div><label class="sw"><input type="checkbox" ' + (off ? 'checked' : '') + ' onchange="toggleRoomOff(\'' + esc(z.zoneId) + '\', this.checked)"><span></span></label></div>' +
+        (z.moods.length ? '<div class="row"><div class="main"><div class="t">Mood</div></div><select onchange="setMoodEntry(\'' + esc(z.zoneId) + '\', this.value)"><option value="">none</option>' + z.moods.map((m) => '<option value="' + esc(m.id) + '"' + (moodSel === m.id ? ' selected' : '') + '>' + esc(m.name) + '</option>').join('') + '</select></div>' : '') +
+        z.lamps.map((l) => {
+          const e = lightEntry('lamp', l.id);
+          return '<div class="row entry' + (e ? '' : ' off') + '"><div class="main"><div class="t">' + esc(l.name) + (l.group ? ' <span class="pill">group</span>' : '') + '</div>' +
+            '<div class="ctl"><span>Set to</span><select onchange="lampSet(\'' + esc(l.id) + '\', \'on\', this.value === \'1\')"><option value="1"' + (!e || e.on ? ' selected' : '') + '>On</option><option value="0"' + (e && !e.on ? ' selected' : '') + '>Off</option></select>' +
+            (l.hasDim ? '<span style="margin-left:6px">Dim</span><input type="number" min="1" max="100" step="1" value="' + (e && e.dim != null ? e.dim : (l.dim ?? '')) + '" placeholder="keep" onchange="lampSet(\'' + esc(l.id) + '\', \'dim\', this.value === \'\' ? null : Number(this.value))"><span>%</span>' : '') +
+            (l.hasColour || l.hasTemp ? '<span style="margin-left:6px; display:inline-block; width:12px; height:12px; border-radius:50%; vertical-align:middle; background:' + (l.colour || '#ffd166') + '" title="colour captured from the lamp"></span>' : '') + '</div></div>' +
+            '<label class="sw"><input type="checkbox" ' + (e ? 'checked' : '') + ' onchange="toggleLamp(\'' + esc(l.id) + '\', this.checked)"><span></span></label></div>';
+        }).join('') + '</details>';
+    }).join('');
+  }
+  function lampFromData(id) { for (const z of sceneLightsData) { const l = z.lamps.find((x) => x.id === id); if (l) return l; } return null; }
+  function toggleLamp(id, on) {
+    editLights = editLights.filter((e) => !(e.kind === 'lamp' && e.id === id));
+    if (on) { const l = lampFromData(id) || {}; editLights.push({ kind: 'lamp', id, on: l.on !== false, dim: l.hasDim ? l.dim : null, hue: l.hasColour ? l.hue : null, sat: l.hasColour ? l.sat : null, temp: l.hasTemp ? l.temp : null }); }
+    renderSceneLights();
+  }
+  function lampSet(id, key, value) { let e = lightEntry('lamp', id); if (!e) { toggleLamp(id, true); e = lightEntry('lamp', id); } e[key] = value; }
+  function toggleRoomOff(zoneId, on) { editLights = editLights.filter((e) => !(e.kind === 'roomOff' && e.zoneId === zoneId)); if (on) editLights.push({ kind: 'roomOff', zoneId }); }
+  function setMoodEntry(zoneId, moodId) {
+    const z = sceneLightsData.find((x) => x.zoneId === zoneId) || { moods: [] };
+    editLights = editLights.filter((e) => !(e.kind === 'mood' && z.moods.some((m) => m.id === e.id)));
+    if (moodId) editLights.push({ kind: 'mood', id: moodId });
+  }
+  /* scene editor: climate on Homey. editClimate = [{ id, on, mode, target, fan }] — null fields mean "keep" */
+  const climEntry = (id) => editClimate.find((e) => e.id === id);
+  function renderSceneClimate() {
+    const el = document.getElementById('sceneclimate');
+    if (!sceneClimateData.length) { el.innerHTML = '<div class="row"><div class="main muted">No thermostats from other apps.</div></div>'; return; }
+    el.innerHTML = sceneClimateData.map((d) => {
+      const e = climEntry(d.id);
+      const sel = (opts, cur, onchange, keep) => '<select onchange="' + onchange + '"><option value="">' + keep + '</option>' + opts.values.map((v) => '<option value="' + esc(v.id) + '"' + (cur === v.id ? ' selected' : '') + '>' + esc(v.title) + '</option>').join('') + '</select>';
+      let ctl = '';
+      if (d.onoff != null) ctl += '<span>Power</span><select onchange="climSet(\'' + esc(d.id) + '\', \'on\', this.value === \'\' ? null : this.value === \'1\')"><option value="">keep</option><option value="1"' + (e && e.on === true ? ' selected' : '') + '>On</option><option value="0"' + (e && e.on === false ? ' selected' : '') + '>Off</option></select>';
+      if (d.mode) ctl += '<span style="margin-left:6px">Mode</span>' + sel(d.mode, e ? e.mode : '', 'climSet(\'' + esc(d.id) + '\', \'mode\', this.value || null)', 'keep');
+      ctl += '<span style="margin-left:6px">Target</span><input type="number" min="' + d.min + '" max="' + d.max + '" step="' + d.step + '" value="' + (e && e.target != null ? e.target : '') + '" placeholder="keep" onchange="climSet(\'' + esc(d.id) + '\', \'target\', this.value === \'\' ? null : Number(this.value))"><span>°C</span>';
+      if (d.fan) ctl += '<span style="margin-left:6px">Fan</span>' + sel(d.fan, e ? e.fan : '', 'climSet(\'' + esc(d.id) + '\', \'fan\', this.value || null)', 'keep');
+      return '<div class="row entry' + (e ? '' : ' off') + '"><div class="main"><div class="t">' + esc(d.name) + '</div><div class="d">' + esc(d.zone) + (d.temp != null ? ' · ' + d.temp + '°' : '') + (d.target != null ? ' → ' + d.target + '°' : '') + '</div><div class="ctl">' + ctl + '</div></div>' +
+        '<label class="sw"><input type="checkbox" ' + (e ? 'checked' : '') + ' onchange="toggleClim(\'' + esc(d.id) + '\', this.checked)"><span></span></label></div>';
+    }).join('');
+  }
+  function toggleClim(id, on) {
+    editClimate = editClimate.filter((e) => e.id !== id);
+    if (on) { const d = sceneClimateData.find((x) => x.id === id) || {}; editClimate.push({ id, on: null, mode: d.mode ? d.mode.value : null, target: d.target ?? null, fan: null }); }
+    renderSceneClimate();
+  }
+  function climSet(id, key, value) { let e = climEntry(id); if (!e) { toggleClim(id, true); e = climEntry(id); } e[key] = value; }
+  function loadSceneClimate() { HomeyRef.api('GET', '/scene-climate', null, (err, res) => { sceneClimateData = err ? [] : res; renderSceneClimate(); }); }
+  function loadSceneLights(cb) { HomeyRef.api('GET', '/scene-lights', null, (err, res) => { sceneLightsData = err ? [] : res; renderSceneLights(); if (cb) cb(); }); }
+  function captureLights() {
+    // refresh states and set every currently-on lamp as an entry with its current level and colour
+    HomeyRef.api('GET', '/scene-lights', null, (err, res) => {
+      if (err) return HomeyRef.alert(err.message);
+      sceneLightsData = res;
+      const keepOthers = editLights.filter((e) => e.kind !== 'lamp');
+      editLights = keepOthers;
+      for (const z of res) for (const l of z.lamps) if (l.on && !l.group) editLights.push({ kind: 'lamp', id: l.id, on: true, dim: l.hasDim ? l.dim : null, hue: l.hasColour ? l.hue : null, sat: l.hasColour ? l.sat : null, temp: l.hasTemp ? l.temp : null });
+      renderSceneLights();
+    });
+  }
   function newScene() {
-    editing = null; editEntries = [];
+    editing = null; editEntries = []; editLights = []; editClimate = [];
+    loadSceneLights(); loadSceneClimate();
     document.getElementById('editlabel').textContent = 'New scene';
     document.getElementById('scenename').value = '';
     document.getElementById('sceneicon').value = '';
@@ -561,6 +700,9 @@
     HomeyRef.api('GET', '/scene-capture', null, (err, list) => {
       const inScene = new Map(sc.entries.map(e => [e.serial, e]));
       editEntries = (list || []).map(d => { const e = inScene.get(d.serial); return Object.assign({}, d, e || {}, { enabled: !!e, name: d.name, hasTilt: d.hasTilt }); });
+      editLights = JSON.parse(JSON.stringify(sc.lights || []));
+      editClimate = JSON.parse(JSON.stringify(sc.climate || []));
+      loadSceneLights(); loadSceneClimate();
       renderEntries();
       document.getElementById('sceneedit').style.display = 'block';
       document.getElementById('sceneedit').scrollIntoView({ behavior: 'smooth' });
@@ -578,10 +720,10 @@
       else out.on = !!e.on;
       return out;
     });
-    if (editing) { const sc = scenes.find(s => s.id === editing); sc.name = name; sc.icon = icon; sc.entries = entries; } else scenes.push({ name, icon, entries });
+    if (editing) { const sc = scenes.find(s => s.id === editing); sc.name = name; sc.icon = icon; sc.entries = entries; sc.lights = editLights; sc.climate = editClimate; } else scenes.push({ name, icon, entries, lights: editLights, climate: editClimate });
     HomeyRef.api('POST', '/scene-save', { scenes }, (err) => { if (err) return HomeyRef.alert('Save failed: ' + err.message); cancelScene(); loadScenes(); });
   }
-  function cancelScene() { editing = null; editEntries = []; document.getElementById('sceneedit').style.display = 'none'; }
+  function cancelScene() { editing = null; editEntries = []; editLights = []; editClimate = []; document.getElementById('sceneedit').style.display = 'none'; }
   function deleteScene(id) {
     HomeyRef.confirm('Delete this scene?', 'warning', (err, ok) => {
       if (!ok) return;
@@ -710,9 +852,11 @@
   /* ---------- log ---------- */
   function loadLog() {
     const serial = document.getElementById('filter').value;
-    HomeyRef.api('GET', '/log' + (serial ? '?device=' + encodeURIComponent(serial) : ''), null, (err, entries) => {
+    HomeyRef.api('GET', '/log' + (serial ? '?device=' + encodeURIComponent(serial) : ''), null, (err, allEntries) => {
+      let entries = allEntries;
       if (err) return;
       const names = {}; for (const o of document.getElementById('filter').options) if (o.value) names[o.value] = o.textContent;
+      const dbg = document.getElementById('showdebug'); if (!(dbg && dbg.checked)) entries = entries.filter((e) => e.level !== 'debug');
       const fmt = (iso) => { const d = new Date(iso), p = (n) => String(n).padStart(2, '0');
         return p(d.getDate()) + '.' + p(d.getMonth() + 1) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()); };
       document.getElementById('log').innerHTML = entries.map(e =>

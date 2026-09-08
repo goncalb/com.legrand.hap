@@ -1,8 +1,23 @@
 {
-  "title": { "en": "Activate a scene" },
-  "titleFormatted": { "en": "Activate scene [[scene]]" },
-  "hint": { "en": "Scenes are defined in the app settings (Scenes tab)." },
+  "title": {
+    "en": "Activate a scene"
+  },
+  "titleFormatted": {
+    "en": "Activate scene [[scene]]"
+  },
+  "hint": {
+    "en": "Runs a scene from the app settings: shutters (position and slats), lights and thermostats to their stored targets."
+  },
   "args": [
-    { "type": "autocomplete", "name": "scene", "title": { "en": "Scene" }, "placeholder": { "en": "Choose a scene" } }
+    {
+      "type": "autocomplete",
+      "name": "scene",
+      "title": {
+        "en": "Scene"
+      },
+      "placeholder": {
+        "en": "Choose a scene"
+      }
+    }
   ]
 }

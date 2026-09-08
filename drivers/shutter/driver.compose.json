@@ -6,6 +6,7 @@
   "capabilities": [
     "shutter_status",
     "windowcoverings_set",
+    "windowcoverings_state",
     "shutter_moving",
     "button.identify",
     "button.rebuild",
@@ -170,6 +171,12 @@
       },
       "desc": {
         "en": "Forget the measured travel times (e.g. after a motor replacement). Learning starts again from the next runs."
+      }
+    },
+    "windowcoverings_state": {
+      "uiComponent": null,
+      "title": {
+        "en": "Direction"
       }
     }
   }

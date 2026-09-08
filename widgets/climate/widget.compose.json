@@ -1,0 +1,17 @@
+{
+  "name": { "en": "Climate" },
+  "devices": { "type": "global", "singular": false, "filter": { "class": "thermostat" } },
+  "settings": [
+    { "id": "layout", "type": "dropdown", "title": { "en": "Layout" }, "value": "cards", "values": [
+      { "id": "cards", "title": { "en": "Room cards with gauge" } }, { "id": "list", "title": { "en": "Compact list" } } ] },
+    { "id": "profiles", "type": "checkbox", "title": { "en": "Show heating-plan profile chips (Smarther rooms)" }, "value": true }
+  ],
+  "api": {
+    "getClimate": { "method": "GET",  "path": "/climate" },
+    "setTarget":  { "method": "POST", "path": "/target" },
+    "setValue":   { "method": "POST", "path": "/value" },
+    "profile":    { "method": "POST", "path": "/profile" },
+    "rejoin":     { "method": "POST", "path": "/rejoin" }
+  },
+  "height": 260
+}

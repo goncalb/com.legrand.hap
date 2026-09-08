@@ -1,0 +1,103 @@
+{
+  "name": {
+    "en": "Lights"
+  },
+  "devices": {
+    "type": "global",
+    "singular": false,
+    "filter": {
+      "class": "light"
+    }
+  },
+  "settings": [
+    {
+      "id": "layout",
+      "type": "dropdown",
+      "title": {
+        "en": "Layout"
+      },
+      "value": "tiles",
+      "values": [
+        {
+          "id": "tiles",
+          "title": {
+            "en": "Tiles (one lamp per card)"
+          }
+        },
+        {
+          "id": "room",
+          "title": {
+            "en": "Room cards (lamps grouped by room)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "columns",
+      "type": "dropdown",
+      "title": {
+        "en": "Columns (tiles)"
+      },
+      "value": "3",
+      "values": [
+        {
+          "id": "2",
+          "title": {
+            "en": "2"
+          }
+        },
+        {
+          "id": "3",
+          "title": {
+            "en": "3"
+          }
+        },
+        {
+          "id": "4",
+          "title": {
+            "en": "4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "alloff",
+      "type": "checkbox",
+      "title": {
+        "en": "Show \"All off\""
+      },
+      "value": true
+    },
+    {
+      "id": "moods",
+      "type": "checkbox",
+      "title": {
+        "en": "Show Homey mood buttons (room cards)"
+      },
+      "value": true
+    }
+  ],
+  "api": {
+    "getLights": {
+      "method": "GET",
+      "path": "/lights"
+    },
+    "toggle": {
+      "method": "POST",
+      "path": "/toggle"
+    },
+    "allOff": {
+      "method": "POST",
+      "path": "/all-off"
+    },
+    "mood": {
+      "method": "POST",
+      "path": "/mood"
+    },
+    "set": {
+      "method": "POST",
+      "path": "/set"
+    }
+  },
+  "height": 160
+}

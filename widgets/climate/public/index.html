@@ -1,0 +1,100 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/>
+<style>
+  :root { --lg-card: var(--homey-color-mono-000, #fff); --lg-border: var(--homey-color-mono-200, #e3e3e3); --lg-brand: #DA5046; --lg-text: var(--homey-text-color, #1c1c1e); --lg-muted: var(--homey-text-color-light, #8a8a8e); --lg-chip: #f7f7f9; --lg-track: #eceef2; --tint-heat: #fdf1ef; --tint-cool: #eef5fb; --tint-off: #f1f1f4; }
+  @media (prefers-color-scheme: dark) { :root { --lg-card: #3a3a3c; --lg-border: #48484a; --lg-brand: #f0716a; --lg-text: #f2f2f7; --lg-muted: #c7c7cc; --lg-chip: #48484a; --lg-track: #55555a; --tint-heat: #4a3230; --tint-cool: #2e3d4a; --tint-off: #333336; } }
+  html, body { margin: 0; overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  body { font-family: var(--homey-font-family-default, -apple-system, sans-serif); color: var(--lg-text); font-size: 12px; }
+  .card { margin: 8px; border: 2px solid var(--lg-border); border-radius: 14px; background: var(--lg-card); padding: 10px 12px; }
+  .card.heating { background: var(--tint-heat); } .card.cooling { background: var(--tint-cool); } .card.off, .card.unavailable { background: var(--tint-off); }
+  .hd { display: flex; align-items: baseline; gap: 8px; }
+  .hd .t { font-weight: 600; font-size: 14px; color: var(--lg-brand); flex: 1; }
+  .card.off .hd .t, .card.unavailable .hd .t { color: var(--lg-muted); }
+  .hd .s { font-size: 10px; color: var(--lg-muted); }
+  .gauge { position: relative; width: 170px; height: 132px; margin: 2px auto 0; }
+  .gauge svg { display: block; }
+  .gauge .big { position: absolute; left: 0; right: 0; top: 52px; text-align: center; font-size: 28px; font-weight: 600; }
+  .gauge .sub { position: absolute; left: 0; right: 0; top: 86px; text-align: center; font-size: 10px; color: var(--lg-muted); line-height: 1.35; }
+  .card.off .gauge .big, .card.unavailable .gauge .big { color: var(--lg-muted); }
+  .row { display: flex; align-items: center; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+  .row .lbl { font-size: 10px; color: var(--lg-muted); width: 34px; }
+  .pm { width: 38px; height: 28px; border-radius: 8px; border: 2px solid var(--lg-brand); color: var(--lg-brand); background: transparent; font-size: 16px; line-height: 1; }
+  .chip { flex: 1; min-width: 40px; text-align: center; padding: 5px 4px; border-radius: 14px; border: 1px solid var(--lg-border); font-size: 10px; background: var(--lg-card); color: var(--lg-text); cursor: pointer; }
+  .chip.on.comfort { background: #f4b183; color: #5a2e0c; border-color: #f4b183; } .chip.on.eco { background: #8fd2b8; color: #114d33; border-color: #8fd2b8; } .chip.on.night { background: #9bb3e8; color: #1e2d5a; border-color: #9bb3e8; }
+  .chip.on.cool { background: #9bd0e8; color: #0f3c52; border-color: #9bd0e8; } .chip.on.heat { background: #f4b183; color: #5a2e0c; border-color: #f4b183; } .chip.on.auto { background: #8fd2b8; color: #114d33; border-color: #8fd2b8; } .chip.on.off { background: #d1d1d6; color: #1c1c1e; border-color: #d1d1d6; }
+  .chip.on.fan { background: var(--lg-chip); font-weight: 600; }
+  .chip.plan { border-color: var(--lg-brand); color: var(--lg-brand); font-weight: 600; }
+  .sw { width: 34px; height: 18px; border-radius: 9px; background: #d1d1d6; position: relative; cursor: pointer; display: inline-block; }
+  .sw.on { background: #34c759; } .sw i { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; } .sw.on i { left: 18px; }
+  .line { display: flex; align-items: center; gap: 8px; padding: 8px 10px; margin: 6px 8px; border-radius: 10px; background: var(--lg-card); border: 2px solid var(--lg-border); }
+  .line .n { flex: 1; font-weight: 500; } .line .v { color: var(--lg-muted); white-space: nowrap; }
+  .empty { padding: 14px; color: var(--lg-muted); text-align: center; }
+</style></head>
+<body>
+<div id="root"></div>
+<script type="text/javascript">
+  let HomeyRef, S = {}, ids = [], data = [];
+  const esc = (s) => String(s).replace(/</g, '&lt;');
+  const PROF = { comfort: 'Comfort', eco: 'Eco', night: 'Night' };
+  function pt(cx, cy, r, deg) { const a = deg * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }
+  function arc(cx, cy, r, a0, a1, color, w) { const [x0, y0] = pt(cx, cy, r, a0), [x1, y1] = pt(cx, cy, r, a1); return `<path d="M${x0.toFixed(1)} ${y0.toFixed(1)} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(1)} ${y1.toFixed(1)}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round"/>`; }
+  function gauge(d) {
+    const cx = 85, cy = 78, r = 62, w = 11, a0 = 150, span = 240;
+    const col = d.action === 'heating' ? '#f4b183' : d.action === 'cooling' ? '#9bd0e8' : (d.action === 'off' || d.action === 'unavailable') ? '#d6d6db' : '#8fd2b8';
+    let s = arc(cx, cy, r, a0, a0 + span, 'var(--lg-track)', w);
+    if (d.temp != null) s += arc(cx, cy, r, a0, a0 + span * Math.max(0, Math.min(1, (d.temp - d.min) / (d.max - d.min))), col, w);
+    if (d.target != null && d.action !== 'off' && d.action !== 'unavailable') { const [x, y] = pt(cx, cy, r, a0 + span * Math.max(0, Math.min(1, (d.target - d.min) / (d.max - d.min)))); s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5.5" fill="#fff" stroke="#DA5046" stroke-width="2.5"/>`; }
+    return `<svg viewBox="0 0 170 132" width="170" height="132">${s}</svg>`;
+  }
+  const chip = (cls, label, on, onclick) => `<button class="chip ${cls}${on ? ' on' : ''}" onclick="${onclick}">${esc(label)}</button>`;
+  const actionText = (d) => ({ heating: '🔥 heating', cooling: '❄ cooling', off: 'off', unavailable: 'unreachable', idle: 'idle' })[d.action];
+  function card(d) {
+    let sub = d.target != null && d.action !== 'off' ? `target ${d.target}°` : (d.action === 'off' ? 'off' : '');
+    if (d.humidity != null) sub += (sub ? '<br>' : '') + `${Math.round(d.humidity)} % humidity`;
+    let head = '';
+    if (d.plan && d.plan.active) head = d.plan.manual ? 'manual' : (d.plan.override ? 'override' : `${esc(d.plan.planName || 'Plan')} · ${PROF[d.plan.profile] || d.plan.profile || ''}`);
+    else if (d.outside != null) head = `outside ${d.outside}°`;
+    let rows = '';
+    const dis = d.action === 'unavailable';
+    if (!dis && d.action !== 'off') {
+      rows += `<div class="row"><button class="pm" onclick="bump('${d.id}',-1)">−</button>`;
+      if (d.plan && S.profiles !== false) rows += Object.keys(PROF).map((p) => chip(p, PROF[p], !d.plan.manual && d.plan.profile === p && !d.plan.override, `profile('${d.plan.serial}','${p}')`)).join('') + chip('plan', 'Plan', false, `rejoin('${d.plan.serial}')`);
+      else if (d.mode) rows += d.mode.values.map((v) => chip(v.id, v.title, d.mode.value === v.id, `setVal('${d.id}','thermostat_mode','${v.id}')`)).join('');
+      rows += `<button class="pm" onclick="bump('${d.id}',1)">+</button></div>`;
+    } else if (d.mode && !dis) {
+      rows += `<div class="row">${d.mode.values.map((v) => chip(v.id, v.title, d.mode.value === v.id, `setVal('${d.id}','thermostat_mode','${v.id}')`)).join('')}${d.onoff === false ? chip('heat', 'Turn on', false, `setVal('${d.id}','onoff',true)`) : ''}</div>`;
+    }
+    if (!dis && d.action !== 'off' && d.fan) rows += `<div class="row"><span class="lbl">Fan</span>${d.fan.values.map((v) => chip('fan', v.title, d.fan.value === v.id, `setVal('${d.id}','thermostat_fan_speed','${v.id}')`)).join('')}</div>`;
+    const toggles = [];
+    if (!dis && d.action !== 'off') {
+      if (d.swing) toggles.push(`<span class="lbl">Swing</span><span class="sw${d.swing.value && d.swing.value !== 'off' ? ' on' : ''}" onclick="setVal('${d.id}','thermostat_swing_mode','${d.swing.value && d.swing.value !== 'off' ? 'off' : (d.swing.values.find((v) => v.id !== 'off') || {}).id}')"><i></i></span>`);
+      if (d.eco != null) toggles.push(`<span class="lbl">Eco</span><span class="sw${d.eco ? ' on' : ''}" onclick="setVal('${d.id}','thermostat_eco',${!d.eco})"><i></i></span>`);
+      if (d.boost != null) toggles.push(`<span class="lbl">Boost</span><span class="sw${d.boost ? ' on' : ''}" onclick="setVal('${d.id}','thermostat_boost',${!d.boost})"><i></i></span>`);
+      if (d.onoff != null && d.isAc) toggles.push(`<span class="lbl">Power</span><span class="sw${d.onoff ? ' on' : ''}" onclick="setVal('${d.id}','onoff',${!d.onoff})"><i></i></span>`);
+    }
+    if (toggles.length) rows += `<div class="row">${toggles.join('')}</div>`;
+    return `<div class="card ${d.action}"><div class="hd"><span class="t">${esc(d.name)}</span><span class="s">${head}</span></div>` +
+      `<div class="gauge">${gauge(d)}<div class="big">${d.temp != null ? d.temp.toFixed(1) + '°' : '–'}</div><div class="sub">${sub}<br>${actionText(d)}</div></div>${rows}</div>`;
+  }
+  function line(d) {
+    const icon = { heating: '🔥', cooling: '❄', off: '○', unavailable: '⚠', idle: '' }[d.action];
+    return `<div class="line"><span class="n">${esc(d.name)}</span><span class="v">${d.temp != null ? d.temp.toFixed(1) : '–'} → ${d.target != null ? d.target : '–'}</span><span style="width:16px;text-align:center">${icon}</span></div>`;
+  }
+  function render() {
+    const root = document.getElementById('root');
+    root.innerHTML = data.length ? data.map(S.layout === 'list' ? line : card).join('') : '<div class="empty">No thermostats selected.</div>';
+    if (HomeyRef.setHeight) HomeyRef.setHeight(root.offsetHeight + 4);
+  }
+  function load() { HomeyRef.api('GET', '/climate?ids=' + encodeURIComponent(ids.join(','))).then((res) => { data = res; render(); }).catch((e) => { document.getElementById('root').innerHTML = '<div class="empty">' + esc(e && e.message || e) + '</div>'; }); }
+  function bump(id, dir) { const d = data.find((x) => x.id === id); if (!d || d.target == null) return; d.target = Math.round((d.target + dir * (d.step || 0.5)) / (d.step || 0.5)) * (d.step || 0.5); d.target = Math.max(d.min, Math.min(d.max, d.target)); render(); clearTimeout(bump.t); bump.t = setTimeout(() => HomeyRef.api('POST', '/target', { id, value: d.target }).then(() => setTimeout(load, 1500)).catch(load), 600); }
+  function setVal(id, cap, value) { HomeyRef.api('POST', '/value', { id, cap, value }).then(() => setTimeout(load, 1200)).catch(load); }
+  function profile(serial, p) { HomeyRef.api('POST', '/profile', { serial, profile: p }).then(() => setTimeout(load, 1200)).catch(load); }
+  function rejoin(serial) { HomeyRef.api('POST', '/rejoin', { serial }).then(() => setTimeout(load, 1200)).catch(load); }
+  function onHomeyReady(Homey) {
+    HomeyRef = Homey; Homey.ready();
+    S = Homey.getSettings ? Homey.getSettings() : {};
+    ids = (Homey.getDeviceIds && Homey.getDeviceIds()) || [];
+    load(); setInterval(load, 8000);
+  }
+</script>
+</body></html>

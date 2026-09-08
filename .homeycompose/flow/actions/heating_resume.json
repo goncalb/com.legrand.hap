@@ -1,5 +1,9 @@
 {
-  "title": { "en": "Resume heating plan" },
-  "hint": { "en": "Cancels any override and manual room holds; the plan takes over again." },
+  "title": {
+    "en": "Resume heating plan"
+  },
+  "hint": {
+    "en": "Cancels any override and room holds and returns every room to the weekly plan."
+  },
   "args": []
 }

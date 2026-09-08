@@ -1,6 +1,6 @@
 {
   "id": "com.legrand.hap",
-  "version": "0.10.4",
+  "version": "0.11.3",
   "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [
@@ -107,6 +107,26 @@
     "saveRoomLights": {
       "method": "POST",
       "path": "/room-lights"
+    },
+    "getLightsTab": {
+      "method": "GET",
+      "path": "/lights-tab"
+    },
+    "setLightType": {
+      "method": "POST",
+      "path": "/light-type"
+    },
+    "setLightGlow": {
+      "method": "POST",
+      "path": "/light-glow"
+    },
+    "getSceneLights": {
+      "method": "GET",
+      "path": "/scene-lights"
+    },
+    "getSceneClimate": {
+      "method": "GET",
+      "path": "/scene-climate"
     }
   },
   "images": {

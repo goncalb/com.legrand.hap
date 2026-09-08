@@ -24,5 +24,8 @@
       "labelMultiplier": 1,
       "labelDecimals": 0
     }
-  ]
+  ],
+  "hint": {
+    "en": "Sets the slat angle of an orientable shutter: 0° = slats fully open, 88° = slats shut. Legrand shutters have five positions (0, 22, 44, 66, 88)."
+  }
 }

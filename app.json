@@ -1,6 +1,7 @@
 {
+  "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.legrand.hap",
-  "version": "0.10.4",
+  "version": "0.11.3",
   "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [
@@ -107,6 +108,26 @@
     "saveRoomLights": {
       "method": "POST",
       "path": "/room-lights"
+    },
+    "getLightsTab": {
+      "method": "GET",
+      "path": "/lights-tab"
+    },
+    "setLightType": {
+      "method": "POST",
+      "path": "/light-type"
+    },
+    "setLightGlow": {
+      "method": "POST",
+      "path": "/light-glow"
+    },
+    "getSceneLights": {
+      "method": "GET",
+      "path": "/scene-lights"
+    },
+    "getSceneClimate": {
+      "method": "GET",
+      "path": "/scene-climate"
     }
   },
   "images": {
@@ -128,77 +149,500 @@
   },
   "source": "https://github.com/",
   "license": "GPL-3.0",
-  "capabilities": {
-    "shutter_moving": {
-      "type": "boolean",
-      "title": {
-        "en": "Moving"
+  "flow": {
+    "triggers": [
+      {
+        "title": {
+          "en": "Heating profile changed"
+        },
+        "tokens": [
+          {
+            "name": "profile",
+            "type": "string",
+            "title": {
+              "en": "Profile"
+            },
+            "example": "comfort"
+          },
+          {
+            "name": "previous",
+            "type": "string",
+            "title": {
+              "en": "Previous profile"
+            },
+            "example": "eco"
+          }
+        ],
+        "args": [],
+        "hint": {
+          "en": "Fires when the house-wide heating profile changes, by schedule or override. Tokens carry the new and previous profile."
+        },
+        "id": "heating_profile_changed"
       },
-      "getable": true,
-      "setable": false,
-      "uiComponent": "sensor",
-      "insights": true,
-      "icon": "/assets/cap_moving.svg"
-    },
-    "shutter_status": {
-      "type": "string",
-      "title": {
-        "en": "Status"
+      {
+        "title": {
+          "en": "A button is pressed"
+        },
+        "titleFormatted": {
+          "en": "Button [[button]] is pressed ([[press]])"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=remote"
+          },
+          {
+            "type": "dropdown",
+            "name": "button",
+            "title": {
+              "en": "Button"
+            },
+            "values": [
+              {
+                "id": "1",
+                "title": {
+                  "en": "Button 1"
+                }
+              },
+              {
+                "id": "2",
+                "title": {
+                  "en": "Button 2"
+                }
+              },
+              {
+                "id": "3",
+                "title": {
+                  "en": "Button 3"
+                }
+              },
+              {
+                "id": "4",
+                "title": {
+                  "en": "Button 4"
+                }
+              },
+              {
+                "id": "5",
+                "title": {
+                  "en": "Button 5"
+                }
+              },
+              {
+                "id": "6",
+                "title": {
+                  "en": "Button 6"
+                }
+              },
+              {
+                "id": "7",
+                "title": {
+                  "en": "Button 7"
+                }
+              },
+              {
+                "id": "8",
+                "title": {
+                  "en": "Button 8"
+                }
+              }
+            ]
+          },
+          {
+            "type": "dropdown",
+            "name": "press",
+            "title": {
+              "en": "Press type"
+            },
+            "values": [
+              {
+                "id": "any",
+                "title": {
+                  "en": "any press"
+                }
+              },
+              {
+                "id": "single",
+                "title": {
+                  "en": "single press"
+                }
+              },
+              {
+                "id": "double",
+                "title": {
+                  "en": "double press"
+                }
+              },
+              {
+                "id": "long",
+                "title": {
+                  "en": "long press"
+                }
+              }
+            ]
+          }
+        ],
+        "tokens": [
+          {
+            "name": "press",
+            "type": "string",
+            "title": {
+              "en": "Press type"
+            },
+            "example": "single"
+          }
+        ],
+        "hint": {
+          "en": "Fires when a button on the wireless remote is pressed. Legrand remotes report single presses; other HomeKit buttons may also report double and long presses."
+        },
+        "id": "remote_button_pressed"
       },
-      "getable": true,
-      "setable": false,
-      "uiComponent": null,
-      "insights": false
-    },
-    "shutter_tilt": {
-      "type": "number",
-      "title": {
-        "en": "Slat angle"
+      {
+        "title": {
+          "en": "Heating started or stopped"
+        },
+        "titleFormatted": {
+          "en": "Heating [[state]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=thermostat"
+          },
+          {
+            "type": "dropdown",
+            "name": "state",
+            "title": {
+              "en": "State"
+            },
+            "values": [
+              {
+                "id": "on",
+                "title": {
+                  "en": "started"
+                }
+              },
+              {
+                "id": "off",
+                "title": {
+                  "en": "stopped"
+                }
+              }
+            ]
+          }
+        ],
+        "hint": {
+          "en": "Fires when the thermostat starts or stops calling for heat."
+        },
+        "id": "thermostat_heating_changed"
+      }
+    ],
+    "conditions": [
+      {
+        "title": {
+          "en": "Heating profile !{{is|isn't}}"
+        },
+        "titleFormatted": {
+          "en": "Heating profile !{{is|isn't}} [[profile]]"
+        },
+        "args": [
+          {
+            "type": "dropdown",
+            "name": "profile",
+            "title": {
+              "en": "Profile"
+            },
+            "values": [
+              {
+                "id": "comfort",
+                "title": {
+                  "en": "Comfort"
+                }
+              },
+              {
+                "id": "eco",
+                "title": {
+                  "en": "Eco"
+                }
+              },
+              {
+                "id": "night",
+                "title": {
+                  "en": "Night"
+                }
+              },
+              {
+                "id": "away",
+                "title": {
+                  "en": "Away"
+                }
+              },
+              {
+                "id": "frost",
+                "title": {
+                  "en": "Frost guard"
+                }
+              }
+            ]
+          }
+        ],
+        "hint": {
+          "en": "Checks the current house-wide heating profile."
+        },
+        "id": "heating_profile_is"
       },
-      "units": {
-        "en": "°"
+      {
+        "title": {
+          "en": "Shutter !{{is|isn't}} moving"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=shutter"
+          }
+        ],
+        "hint": {
+          "en": "True while the shutter's motor is running."
+        },
+        "id": "shutter_is_moving"
       },
-      "min": 0,
-      "max": 90,
-      "step": 1,
-      "decimals": 0,
-      "getable": true,
-      "setable": true,
-      "uiComponent": "slider",
-      "insights": false,
-      "icon": "/assets/cap_tilt.svg"
-    },
-    "thermostat_heating": {
-      "type": "boolean",
-      "title": {
-        "en": "Heating"
+      {
+        "title": {
+          "en": "Thermostat !{{is|isn't}} heating"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=thermostat"
+          }
+        ],
+        "hint": {
+          "en": "True while the thermostat is calling for heat."
+        },
+        "id": "thermostat_is_heating"
+      }
+    ],
+    "actions": [
+      {
+        "title": {
+          "en": "Resume heating plan"
+        },
+        "hint": {
+          "en": "Cancels any override and room holds and returns every room to the weekly plan."
+        },
+        "args": [],
+        "id": "heating_resume"
       },
-      "getable": true,
-      "setable": false,
-      "uiComponent": "sensor",
-      "insights": true,
-      "icon": "/assets/cap_heating.svg"
-    },
-    "thermostat_status": {
-      "type": "string",
-      "title": {
-        "en": "Status"
+      {
+        "title": {
+          "en": "Set heating profile"
+        },
+        "titleFormatted": {
+          "en": "Set heating to [[profile]] [[duration]]"
+        },
+        "hint": {
+          "en": "Puts the whole house on a profile for the chosen duration, on top of the weekly plan. Rooms that don't follow the plan are not affected."
+        },
+        "args": [
+          {
+            "type": "dropdown",
+            "name": "profile",
+            "title": {
+              "en": "Profile"
+            },
+            "values": [
+              {
+                "id": "comfort",
+                "title": {
+                  "en": "Comfort"
+                }
+              },
+              {
+                "id": "eco",
+                "title": {
+                  "en": "Eco"
+                }
+              },
+              {
+                "id": "night",
+                "title": {
+                  "en": "Night"
+                }
+              },
+              {
+                "id": "away",
+                "title": {
+                  "en": "Away"
+                }
+              },
+              {
+                "id": "frost",
+                "title": {
+                  "en": "Frost guard"
+                }
+              }
+            ]
+          },
+          {
+            "type": "dropdown",
+            "name": "duration",
+            "title": {
+              "en": "Duration"
+            },
+            "values": [
+              {
+                "id": "next",
+                "title": {
+                  "en": "until the next switch point"
+                }
+              },
+              {
+                "id": "1",
+                "title": {
+                  "en": "for 1 hour"
+                }
+              },
+              {
+                "id": "2",
+                "title": {
+                  "en": "for 2 hours"
+                }
+              },
+              {
+                "id": "4",
+                "title": {
+                  "en": "for 4 hours"
+                }
+              },
+              {
+                "id": "8",
+                "title": {
+                  "en": "for 8 hours"
+                }
+              },
+              {
+                "id": "24",
+                "title": {
+                  "en": "for 24 hours"
+                }
+              },
+              {
+                "id": "forever",
+                "title": {
+                  "en": "until cancelled"
+                }
+              }
+            ]
+          }
+        ],
+        "id": "heating_set_profile"
       },
-      "getable": true,
-      "setable": false,
-      "uiComponent": null,
-      "insights": false
-    }
-  },
-  "discovery": {
-    "hap": {
-      "type": "mdns-sd",
-      "mdns-sd": {
-        "name": "hap",
-        "protocol": "tcp"
+      {
+        "title": {
+          "en": "Activate a scene"
+        },
+        "titleFormatted": {
+          "en": "Activate scene [[scene]]"
+        },
+        "hint": {
+          "en": "Runs a scene from the app settings: shutters (position and slats), lights and thermostats to their stored targets."
+        },
+        "args": [
+          {
+            "type": "autocomplete",
+            "name": "scene",
+            "title": {
+              "en": "Scene"
+            },
+            "placeholder": {
+              "en": "Choose a scene"
+            }
+          }
+        ],
+        "id": "scene_activate"
       },
-      "id": "{{txt.id}}"
-    }
+      {
+        "title": {
+          "en": "Set slat angle"
+        },
+        "titleFormatted": {
+          "en": "Set slats to [[angle]]"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=shutter&capabilities=shutter_tilt"
+          },
+          {
+            "type": "range",
+            "name": "angle",
+            "title": {
+              "en": "Slat angle"
+            },
+            "min": 0,
+            "max": 88,
+            "step": 22,
+            "label": "°",
+            "labelMultiplier": 1,
+            "labelDecimals": 0
+          }
+        ],
+        "hint": {
+          "en": "Sets the slat angle of an orientable shutter: 0° = slats fully open, 88° = slats shut. Legrand shutters have five positions (0, 22, 44, 66, 88)."
+        },
+        "id": "shutter_set_tilt"
+      },
+      {
+        "title": {
+          "en": "Set position and slat angle"
+        },
+        "titleFormatted": {
+          "en": "Set position to [[position]] and slats to [[angle]]"
+        },
+        "hint": {
+          "en": "Moves the shutter to the position, waits for it to stop, then sets the slat angle. Use it for \"closed with slats open\"."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=shutter&capabilities=shutter_tilt"
+          },
+          {
+            "type": "range",
+            "name": "position",
+            "title": {
+              "en": "Position"
+            },
+            "min": 0,
+            "max": 100,
+            "step": 1,
+            "label": "%",
+            "labelMultiplier": 1,
+            "labelDecimals": 0
+          },
+          {
+            "type": "range",
+            "name": "angle",
+            "title": {
+              "en": "Slat angle"
+            },
+            "min": 0,
+            "max": 88,
+            "step": 22,
+            "label": "°",
+            "labelMultiplier": 1,
+            "labelDecimals": 0
+          }
+        ],
+        "id": "shutter_set_tilt_and_position"
+      }
+    ]
   },
   "drivers": [
     {
@@ -498,6 +942,7 @@
       "capabilities": [
         "shutter_status",
         "windowcoverings_set",
+        "windowcoverings_state",
         "shutter_moving",
         "button.identify",
         "button.rebuild",
@@ -662,6 +1107,12 @@
           },
           "desc": {
             "en": "Forget the measured travel times (e.g. after a motor replacement). Learning starts again from the next runs."
+          }
+        },
+        "windowcoverings_state": {
+          "uiComponent": null,
+          "title": {
+            "en": "Direction"
           }
         }
       },
@@ -918,481 +1369,75 @@
       "id": "thermostat"
     }
   ],
-  "flow": {
-    "triggers": [
-      {
-        "title": {
-          "en": "Heating profile changed"
-        },
-        "tokens": [
-          {
-            "name": "profile",
-            "type": "string",
-            "title": {
-              "en": "Profile"
-            },
-            "example": "comfort"
-          },
-          {
-            "name": "previous",
-            "type": "string",
-            "title": {
-              "en": "Previous profile"
-            },
-            "example": "eco"
-          }
-        ],
-        "args": [],
-        "id": "heating_profile_changed"
-      },
-      {
-        "title": {
-          "en": "A button is pressed"
-        },
-        "titleFormatted": {
-          "en": "Button [[button]] is pressed ([[press]])"
-        },
-        "args": [
-          {
-            "type": "device",
-            "name": "device",
-            "filter": "driver_id=remote"
-          },
-          {
-            "type": "dropdown",
-            "name": "button",
-            "title": {
-              "en": "Button"
-            },
-            "values": [
-              {
-                "id": "1",
-                "title": {
-                  "en": "Button 1"
-                }
-              },
-              {
-                "id": "2",
-                "title": {
-                  "en": "Button 2"
-                }
-              },
-              {
-                "id": "3",
-                "title": {
-                  "en": "Button 3"
-                }
-              },
-              {
-                "id": "4",
-                "title": {
-                  "en": "Button 4"
-                }
-              },
-              {
-                "id": "5",
-                "title": {
-                  "en": "Button 5"
-                }
-              },
-              {
-                "id": "6",
-                "title": {
-                  "en": "Button 6"
-                }
-              },
-              {
-                "id": "7",
-                "title": {
-                  "en": "Button 7"
-                }
-              },
-              {
-                "id": "8",
-                "title": {
-                  "en": "Button 8"
-                }
-              }
-            ]
-          },
-          {
-            "type": "dropdown",
-            "name": "press",
-            "title": {
-              "en": "Press type"
-            },
-            "values": [
-              {
-                "id": "any",
-                "title": {
-                  "en": "any press"
-                }
-              },
-              {
-                "id": "single",
-                "title": {
-                  "en": "single press"
-                }
-              },
-              {
-                "id": "double",
-                "title": {
-                  "en": "double press"
-                }
-              },
-              {
-                "id": "long",
-                "title": {
-                  "en": "long press"
-                }
-              }
-            ]
-          }
-        ],
-        "tokens": [
-          {
-            "name": "press",
-            "type": "string",
-            "title": {
-              "en": "Press type"
-            },
-            "example": "single"
-          }
-        ],
-        "id": "remote_button_pressed"
-      },
-      {
-        "title": {
-          "en": "Heating started or stopped"
-        },
-        "titleFormatted": {
-          "en": "Heating [[state]]"
-        },
-        "args": [
-          {
-            "type": "device",
-            "name": "device",
-            "filter": "driver_id=thermostat"
-          },
-          {
-            "type": "dropdown",
-            "name": "state",
-            "title": {
-              "en": "State"
-            },
-            "values": [
-              {
-                "id": "on",
-                "title": {
-                  "en": "started"
-                }
-              },
-              {
-                "id": "off",
-                "title": {
-                  "en": "stopped"
-                }
-              }
-            ]
-          }
-        ],
-        "id": "thermostat_heating_changed"
-      }
-    ],
-    "conditions": [
-      {
-        "title": {
-          "en": "Heating profile !{{is|isn't}}"
-        },
-        "titleFormatted": {
-          "en": "Heating profile !{{is|isn't}} [[profile]]"
-        },
-        "args": [
-          {
-            "type": "dropdown",
-            "name": "profile",
-            "title": {
-              "en": "Profile"
-            },
-            "values": [
-              {
-                "id": "comfort",
-                "title": {
-                  "en": "Comfort"
-                }
-              },
-              {
-                "id": "eco",
-                "title": {
-                  "en": "Eco"
-                }
-              },
-              {
-                "id": "night",
-                "title": {
-                  "en": "Night"
-                }
-              },
-              {
-                "id": "away",
-                "title": {
-                  "en": "Away"
-                }
-              },
-              {
-                "id": "frost",
-                "title": {
-                  "en": "Frost guard"
-                }
-              }
-            ]
-          }
-        ],
-        "id": "heating_profile_is"
-      },
-      {
-        "title": {
-          "en": "Shutter !{{is|isn't}} moving"
-        },
-        "args": [
-          {
-            "type": "device",
-            "name": "device",
-            "filter": "driver_id=shutter"
-          }
-        ],
-        "id": "shutter_is_moving"
-      },
-      {
-        "title": {
-          "en": "Thermostat !{{is|isn't}} heating"
-        },
-        "args": [
-          {
-            "type": "device",
-            "name": "device",
-            "filter": "driver_id=thermostat"
-          }
-        ],
-        "id": "thermostat_is_heating"
-      }
-    ],
-    "actions": [
-      {
-        "title": {
-          "en": "Resume heating plan"
-        },
-        "hint": {
-          "en": "Cancels any override and manual room holds; the plan takes over again."
-        },
-        "args": [],
-        "id": "heating_resume"
-      },
-      {
-        "title": {
-          "en": "Set heating profile"
-        },
-        "titleFormatted": {
-          "en": "Set heating to [[profile]] [[duration]]"
-        },
-        "hint": {
-          "en": "Overrides the house heating plan for all rooms that follow it."
-        },
-        "args": [
-          {
-            "type": "dropdown",
-            "name": "profile",
-            "title": {
-              "en": "Profile"
-            },
-            "values": [
-              {
-                "id": "comfort",
-                "title": {
-                  "en": "Comfort"
-                }
-              },
-              {
-                "id": "eco",
-                "title": {
-                  "en": "Eco"
-                }
-              },
-              {
-                "id": "night",
-                "title": {
-                  "en": "Night"
-                }
-              },
-              {
-                "id": "away",
-                "title": {
-                  "en": "Away"
-                }
-              },
-              {
-                "id": "frost",
-                "title": {
-                  "en": "Frost guard"
-                }
-              }
-            ]
-          },
-          {
-            "type": "dropdown",
-            "name": "duration",
-            "title": {
-              "en": "Duration"
-            },
-            "values": [
-              {
-                "id": "next",
-                "title": {
-                  "en": "until the next switch point"
-                }
-              },
-              {
-                "id": "1",
-                "title": {
-                  "en": "for 1 hour"
-                }
-              },
-              {
-                "id": "2",
-                "title": {
-                  "en": "for 2 hours"
-                }
-              },
-              {
-                "id": "4",
-                "title": {
-                  "en": "for 4 hours"
-                }
-              },
-              {
-                "id": "8",
-                "title": {
-                  "en": "for 8 hours"
-                }
-              },
-              {
-                "id": "24",
-                "title": {
-                  "en": "for 24 hours"
-                }
-              },
-              {
-                "id": "forever",
-                "title": {
-                  "en": "until cancelled"
-                }
-              }
-            ]
-          }
-        ],
-        "id": "heating_set_profile"
-      },
-      {
-        "title": {
-          "en": "Activate a scene"
-        },
-        "titleFormatted": {
-          "en": "Activate scene [[scene]]"
-        },
-        "hint": {
-          "en": "Scenes are defined in the app settings (Scenes tab)."
-        },
-        "args": [
-          {
-            "type": "autocomplete",
-            "name": "scene",
-            "title": {
-              "en": "Scene"
-            },
-            "placeholder": {
-              "en": "Choose a scene"
-            }
-          }
-        ],
-        "id": "scene_activate"
-      },
-      {
-        "title": {
-          "en": "Set slat angle"
-        },
-        "titleFormatted": {
-          "en": "Set slats to [[angle]]"
-        },
-        "args": [
-          {
-            "type": "device",
-            "name": "device",
-            "filter": "driver_id=shutter&capabilities=shutter_tilt"
-          },
-          {
-            "type": "range",
-            "name": "angle",
-            "title": {
-              "en": "Slat angle"
-            },
-            "min": 0,
-            "max": 88,
-            "step": 22,
-            "label": "°",
-            "labelMultiplier": 1,
-            "labelDecimals": 0
-          }
-        ],
-        "id": "shutter_set_tilt"
-      },
-      {
-        "title": {
-          "en": "Set position and slat angle"
-        },
-        "titleFormatted": {
-          "en": "Set position to [[position]] and slats to [[angle]]"
-        },
-        "hint": {
-          "en": "Moves the shutter to the position first, then sets the slat angle once it has stopped."
-        },
-        "args": [
-          {
-            "type": "device",
-            "name": "device",
-            "filter": "driver_id=shutter&capabilities=shutter_tilt"
-          },
-          {
-            "type": "range",
-            "name": "position",
-            "title": {
-              "en": "Position"
-            },
-            "min": 0,
-            "max": 100,
-            "step": 1,
-            "label": "%",
-            "labelMultiplier": 1,
-            "labelDecimals": 0
-          },
-          {
-            "type": "range",
-            "name": "angle",
-            "title": {
-              "en": "Slat angle"
-            },
-            "min": 0,
-            "max": 88,
-            "step": 22,
-            "label": "°",
-            "labelMultiplier": 1,
-            "labelDecimals": 0
-          }
-        ],
-        "id": "shutter_set_tilt_and_position"
-      }
-    ]
-  },
   "widgets": {
+    "climate": {
+      "name": {
+        "en": "Climate"
+      },
+      "devices": {
+        "type": "global",
+        "singular": false,
+        "filter": {
+          "class": "thermostat"
+        }
+      },
+      "settings": [
+        {
+          "id": "layout",
+          "type": "dropdown",
+          "title": {
+            "en": "Layout"
+          },
+          "value": "cards",
+          "values": [
+            {
+              "id": "cards",
+              "title": {
+                "en": "Room cards with gauge"
+              }
+            },
+            {
+              "id": "list",
+              "title": {
+                "en": "Compact list"
+              }
+            }
+          ]
+        },
+        {
+          "id": "profiles",
+          "type": "checkbox",
+          "title": {
+            "en": "Show heating-plan profile chips (Smarther rooms)"
+          },
+          "value": true
+        }
+      ],
+      "api": {
+        "getClimate": {
+          "method": "GET",
+          "path": "/climate"
+        },
+        "setTarget": {
+          "method": "POST",
+          "path": "/target"
+        },
+        "setValue": {
+          "method": "POST",
+          "path": "/value"
+        },
+        "profile": {
+          "method": "POST",
+          "path": "/profile"
+        },
+        "rejoin": {
+          "method": "POST",
+          "path": "/rejoin"
+        }
+      },
+      "height": 260,
+      "id": "climate"
+    },
     "heating": {
       "name": {
         "en": "Legrand heating"
@@ -1428,7 +1473,112 @@
         "filter": {
           "class": "thermostat"
         }
-      }
+      },
+      "id": "heating"
+    },
+    "lights": {
+      "name": {
+        "en": "Lights"
+      },
+      "devices": {
+        "type": "global",
+        "singular": false,
+        "filter": {
+          "class": "light"
+        }
+      },
+      "settings": [
+        {
+          "id": "layout",
+          "type": "dropdown",
+          "title": {
+            "en": "Layout"
+          },
+          "value": "tiles",
+          "values": [
+            {
+              "id": "tiles",
+              "title": {
+                "en": "Tiles (one lamp per card)"
+              }
+            },
+            {
+              "id": "room",
+              "title": {
+                "en": "Room cards (lamps grouped by room)"
+              }
+            }
+          ]
+        },
+        {
+          "id": "columns",
+          "type": "dropdown",
+          "title": {
+            "en": "Columns (tiles)"
+          },
+          "value": "3",
+          "values": [
+            {
+              "id": "2",
+              "title": {
+                "en": "2"
+              }
+            },
+            {
+              "id": "3",
+              "title": {
+                "en": "3"
+              }
+            },
+            {
+              "id": "4",
+              "title": {
+                "en": "4"
+              }
+            }
+          ]
+        },
+        {
+          "id": "alloff",
+          "type": "checkbox",
+          "title": {
+            "en": "Show \"All off\""
+          },
+          "value": true
+        },
+        {
+          "id": "moods",
+          "type": "checkbox",
+          "title": {
+            "en": "Show Homey mood buttons (room cards)"
+          },
+          "value": true
+        }
+      ],
+      "api": {
+        "getLights": {
+          "method": "GET",
+          "path": "/lights"
+        },
+        "toggle": {
+          "method": "POST",
+          "path": "/toggle"
+        },
+        "allOff": {
+          "method": "POST",
+          "path": "/all-off"
+        },
+        "mood": {
+          "method": "POST",
+          "path": "/mood"
+        },
+        "set": {
+          "method": "POST",
+          "path": "/set"
+        }
+      },
+      "height": 160,
+      "id": "lights"
     },
     "scenes": {
       "name": {
@@ -1542,7 +1692,8 @@
           "path": "/run"
         }
       },
-      "height": 120
+      "height": 120,
+      "id": "scenes"
     },
     "shutters": {
       "name": {
@@ -1584,6 +1735,17 @@
             "en": "Show Open / Shade / Close buttons"
           },
           "value": true
+        },
+        {
+          "id": "lamp",
+          "type": "checkbox",
+          "title": {
+            "en": "Show the room light on the windows"
+          },
+          "hint": {
+            "en": "Pendant lamp above each window, lit when a lamp of that room is on (App settings → Devices → Rooms & lights)."
+          },
+          "value": true
         }
       ],
       "api": {
@@ -1603,7 +1765,80 @@
         "filter": {
           "class": "windowcoverings"
         }
-      }
+      },
+      "id": "shutters"
+    }
+  },
+  "capabilities": {
+    "shutter_moving": {
+      "type": "boolean",
+      "title": {
+        "en": "Moving"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "insights": true,
+      "icon": "/assets/cap_moving.svg"
+    },
+    "shutter_status": {
+      "type": "string",
+      "title": {
+        "en": "Status"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": null,
+      "insights": false
+    },
+    "shutter_tilt": {
+      "type": "number",
+      "title": {
+        "en": "Slat angle"
+      },
+      "units": {
+        "en": "°"
+      },
+      "min": 0,
+      "max": 90,
+      "step": 1,
+      "decimals": 0,
+      "getable": true,
+      "setable": true,
+      "uiComponent": "slider",
+      "insights": false,
+      "icon": "/assets/cap_tilt.svg"
+    },
+    "thermostat_heating": {
+      "type": "boolean",
+      "title": {
+        "en": "Heating"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "insights": true,
+      "icon": "/assets/cap_heating.svg"
+    },
+    "thermostat_status": {
+      "type": "string",
+      "title": {
+        "en": "Status"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": null,
+      "insights": false
+    }
+  },
+  "discovery": {
+    "hap": {
+      "type": "mdns-sd",
+      "mdns-sd": {
+        "name": "hap",
+        "protocol": "tcp"
+      },
+      "id": "{{txt.id}}"
     }
   }
 }

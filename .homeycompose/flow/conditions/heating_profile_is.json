@@ -45,5 +45,8 @@
         }
       ]
     }
-  ]
+  ],
+  "hint": {
+    "en": "Checks the current house-wide heating profile."
+  }
 }

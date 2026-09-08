@@ -1,8 +1,27 @@
 {
-  "title": { "en": "Heating profile changed" },
+  "title": {
+    "en": "Heating profile changed"
+  },
   "tokens": [
-    { "name": "profile", "type": "string", "title": { "en": "Profile" }, "example": "comfort" },
-    { "name": "previous", "type": "string", "title": { "en": "Previous profile" }, "example": "eco" }
+    {
+      "name": "profile",
+      "type": "string",
+      "title": {
+        "en": "Profile"
+      },
+      "example": "comfort"
+    },
+    {
+      "name": "previous",
+      "type": "string",
+      "title": {
+        "en": "Previous profile"
+      },
+      "example": "eco"
+    }
   ],
-  "args": []
+  "args": [],
+  "hint": {
+    "en": "Fires when the house-wide heating profile changes, by schedule or override. Tokens carry the new and previous profile."
+  }
 }

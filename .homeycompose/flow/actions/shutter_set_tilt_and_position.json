@@ -6,7 +6,7 @@
     "en": "Set position to [[position]] and slats to [[angle]]"
   },
   "hint": {
-    "en": "Moves the shutter to the position first, then sets the slat angle once it has stopped."
+    "en": "Moves the shutter to the position, waits for it to stop, then sets the slat angle. Use it for \"closed with slats open\"."
   },
   "args": [
     {

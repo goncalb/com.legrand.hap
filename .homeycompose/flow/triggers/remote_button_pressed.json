@@ -111,5 +111,8 @@
       },
       "example": "single"
     }
-  ]
+  ],
+  "hint": {
+    "en": "Fires when a button on the wireless remote is pressed. Legrand remotes report single presses; other HomeKit buttons may also report double and long presses."
+  }
 }

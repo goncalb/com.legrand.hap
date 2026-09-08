@@ -1,11 +1,39 @@
 {
-  "title": { "en": "Heating started or stopped" },
-  "titleFormatted": { "en": "Heating [[state]]" },
+  "title": {
+    "en": "Heating started or stopped"
+  },
+  "titleFormatted": {
+    "en": "Heating [[state]]"
+  },
   "args": [
-    { "type": "device", "name": "device", "filter": "driver_id=thermostat" },
-    { "type": "dropdown", "name": "state", "title": { "en": "State" }, "values": [
-      { "id": "on",  "title": { "en": "started" } },
-      { "id": "off", "title": { "en": "stopped" } }
-    ]}
-  ]
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=thermostat"
+    },
+    {
+      "type": "dropdown",
+      "name": "state",
+      "title": {
+        "en": "State"
+      },
+      "values": [
+        {
+          "id": "on",
+          "title": {
+            "en": "started"
+          }
+        },
+        {
+          "id": "off",
+          "title": {
+            "en": "stopped"
+          }
+        }
+      ]
+    }
+  ],
+  "hint": {
+    "en": "Fires when the thermostat starts or stops calling for heat."
+  }
 }

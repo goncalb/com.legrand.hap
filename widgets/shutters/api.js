@@ -13,7 +13,8 @@ module.exports = {
   async getShutters({ homey, query }) {
     const ids = query.ids ? String(query.ids).split(',').filter(Boolean) : [];
     const list = await widgetDevices(homey, 'shutter', ids);
-    const lights = await Promise.all(list.map((d) => roomLights.lightOn(homey, d.getData().serial)));
+    const wantLights = query.lamp !== '0';
+    const lights = wantLights ? await Promise.all(list.map((d) => roomLights.lightOn(homey, d.getData().serial))) : list.map(() => false);
     const palette = sky(homey);
     return { sky: palette, shutters: list.map((d, i) => ({
       light: lights[i],

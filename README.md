@@ -17,7 +17,7 @@
 
 ---
 
-**Version 0.10.4 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
+**Version 0.11.3 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
 
 ## What it does
 
@@ -82,7 +82,7 @@ slider snaps to them.
 - Remote: *Button [1–8] is pressed ([any | single | double | long])* — token: press type
 - Thermostat: *Heating started / stopped*
 - Heating plan: *Heating profile changed* (tokens: profile, previous profile)
-- plus Homey's built-in cards for every standard capability (position changed, temperature changed, …)
+- plus Homey's built-in cards for every standard capability (turned on/off, dim level, position, state up/down, temperature, target, mode, humidity, colour…)
 
 **Conditions**
 - Shutter *is / isn't moving*
@@ -97,7 +97,7 @@ slider snaps to them.
 
 ## Dashboard widgets
 
-Three widgets for Homey Dashboards, each configurable per instance (which devices or scenes).
+Five widgets for Homey Dashboards, each configurable per instance (which devices or scenes). Shutters, Heating and Scenes work with this app's devices; **Lights** and **Climate** work with any light or thermostat on Homey.
 
 #### Shutters
 
@@ -114,6 +114,18 @@ then **Open / Shade / Close** — with nothing selected the buttons act on all s
 
 Current profile and next switch, profile chips to override, a resume-schedule button, and one card per room
 with temperature → target, a flame while heating and manual/off tags.
+
+#### Lights *(new — any Homey light)*
+
+Tiles or room cards. Each lamp is drawn by type — ceiling, floor lamp, table lamp, bulb, LED strip, spot, wall switch, wall light, outdoor — in the colour
+and brightness it currently emits (Hue colours, tunable whites, plain switches). Tap to toggle, "All off" per widget or
+per room, and the room's Homey moods as buttons. Lamp types are guessed from names and editable in App settings → Lights.
+
+#### Climate *(new — any Homey thermostat, including air conditioners)*
+
+Gauge room cards that adapt to the device: Smarther rooms get ± setpoint, profile chips (Comfort / Eco / Night) and
+"Plan"; air conditioners get their modes, fan speed, swing / eco / boost toggles and the outside temperature. Tints:
+warm while heating, cool while cooling, grey when off. A compact list layout is available.
 
 #### Scenes
 
@@ -160,9 +172,9 @@ by Homey, so presence, calendars and windows can drive it from Flows.
 ## Scenes
 
 *App settings → Scenes.* A scene is a named set of target states — shutter position and slat
-angle, light on/off, thermostat mode and target — with an emoji. "Capture current state"
-pre-fills a new scene from how the house is right now. Run from the settings page, a Flow
-(*Activate scene*) or the Scenes widget.
+angle, thermostat mode and target, and lights: any lamp on Homey (on/off, brightness, colour), a room "all off",
+or a Homey mood; thermostats and air conditioners from other apps (power, mode, target, fan) — with an emoji. "Capture current" pre-fills a scene from how the house is right now. Run from
+the settings page, a Flow (*Activate scene*) or the Scenes widget.
 
 ## Troubleshooting
 
@@ -192,7 +204,7 @@ homey app run
 ### Dead ends (kept so nobody retries them)
 
 - **Stop for shutters**: Legrand exposes no HoldPosition and re-writing CurrentPosition does not
-  halt travel. No stop command.
+  halt travel. No stop command; the up/down state capability exists for Flows only and refuses "idle".
 - **"Exclude from Energy" on lights**: only metered devices get it; `setEnergy()` tricks detach
   devices from manifest defaults. Set "Power usage when on" to 0 W instead.
 - **Custom number sensors as tile status**: only custom *string* capabilities are offered in the

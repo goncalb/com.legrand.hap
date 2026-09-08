@@ -73,6 +73,12 @@ class ShutterDevice extends HapDevice {
     }
     await this.setSettings({ tilt: hasTilt ? 'Yes' : 'No' }).catch(() => {});
 
+    // Flow-only "Set state" card: up = open, down = close. Legrand modules have no stop, so idle is refused.
+    this._listen('windowcoverings_state', async (state) => {
+      if (state === 'up') return this.hap.setChar(this.serial, 'TargetPosition', 100);
+      if (state === 'down') return this.hap.setChar(this.serial, 'TargetPosition', 0);
+      throw new Error('Legrand shutters cannot stop mid-way; set a position instead');
+    });
     this._listen('windowcoverings_set', async (value) => {
       await this.hap.setChar(this.serial, 'TargetPosition', Math.round(value * 100));
     });
@@ -131,6 +137,7 @@ class ShutterDevice extends HapDevice {
     if (this._moving && !wasMoving) this._runStart = { t: Date.now(), pos: this._lastPos, dir: this._direction };
     else if (!this._moving && wasMoving && this._runStart) await this._learnTravel(this._lastPos);   // fallback: no position update seen
     await this.setCapabilityValue('shutter_moving', this._moving).catch(this.error);
+    if (this.hasCapability('windowcoverings_state')) await this.setCapabilityValue('windowcoverings_state', this._direction || 'idle').catch(this.error);
     await this._updateStatus();
   }
 

@@ -1,4 +1,15 @@
 {
-  "title": { "en": "Shutter !{{is|isn't}} moving" },
-  "args": [ { "type": "device", "name": "device", "filter": "driver_id=shutter" } ]
+  "title": {
+    "en": "Shutter !{{is|isn't}} moving"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=shutter"
+    }
+  ],
+  "hint": {
+    "en": "True while the shutter's motor is running."
+  }
 }

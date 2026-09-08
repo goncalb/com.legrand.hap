@@ -138,9 +138,106 @@ module.exports = {
   async heatingOverride({ homey, body }) { await homey.app.heating.setOverride(body.profile, body.duration); return homey.app.heating.status(); },
   async heatingResume({ homey }) { await homey.app.heating.resume(); return homey.app.heating.status(); },
 
+  /* ----- Lights tab: every light on Homey, by room, with type and window-glow flag ----- */
+  async getLightsTab({ homey }) {
+    const H = require('./lib/homeyApi'); const L = require('./lib/lights');
+    const { devices, zones } = await H.snapshot(homey);
+    const glowCfg = homey.settings.get('roomLights') || {};
+    const excluded = new Set(Object.values(glowCfg).flatMap((c) => c.excluded || []));
+    // zones whose room (zone + sub-zones) contains a shutter → the glow switch is meaningful there
+    const shutterZones = Object.values(devices).filter((d) => d.class === 'windowcoverings' && d.data && d.data.serial).map((d) => d.zone);
+    const glowZones = new Set(shutterZones.flatMap((z) => [...H.zoneTree(zones, z)]));
+    // a lamp belongs to its room = the zone two levels below the root (Home › Floor › Room); deeper zones are areas inside the room
+    const roomOf = (zoneId) => {
+      let z = zones[zoneId]; if (!z) return null;
+      const chain = []; while (z) { chain.unshift(z); z = z.parent ? zones[z.parent] : null; }
+      return chain[Math.min(2, chain.length - 1)];
+    };
+    const groups = {};
+    for (const d of Object.values(devices).filter(H.isLight)) {
+      const room = roomOf(d.zone);
+      const key = room ? room.id : '';
+      const g = groups[key] = groups[key] || { zoneId: key, path: room ? H.zonePath(zones, room.id) : 'Unassigned', hasShutters: glowZones.has(key), lights: [] };
+      const area = room && d.zone !== room.id ? H.zoneName(zones, d.zone) : '';
+      g.lights.push({ ...L.describe(homey, d), area, glow: !excluded.has(d.id), guessed: !(homey.settings.get('lightTypes') || {})[d.id] });
+    }
+    const rooms = Object.values(groups).sort((a, b) => a.path.localeCompare(b.path));
+    // Group devices (Homey's Group app and similar): recognised by their driver; members come from the group's
+    // settings when readable, otherwise from the names (same words as the group's name plus a number).
+    const isGroupDevice = (d) => /group/i.test(String(d.driverId || ''));
+    const memberIdsOf = (d) => {
+      const st = d.settings || {};
+      const arr = st.devices || st.groupedDevices || st.members || st.deviceIds;
+      return Array.isArray(arr) ? arr.map((x) => (typeof x === 'string' ? x : x && x.id)).filter(Boolean) : null;
+    };
+    // name fallback: same area, other lamp shares the group's first significant word (e.g. "Perifo …")
+    const firstWord = (n) => (String(n).toLowerCase().match(/[a-z]{4,}/) || [''])[0];
+    for (const r of rooms) {
+      for (const l of r.lights) {
+        const dev = devices[l.id];
+        if (!isGroupDevice(dev)) continue;
+        l.group = true;
+        const ids = memberIdsOf(dev);
+        const fw = firstWord(l.name);
+        const members = ids ? r.lights.filter((m) => ids.includes(m.id)) : (fw ? r.lights.filter((m) => m !== l && m.zone === l.zone && !m.group && firstWord(m.name) === fw) : []);
+        members.forEach((m) => { m.memberOf = l.id; if (m.guessed) { m.type = l.type; m.inherited = true; } });
+      }
+      r.lights.sort((a, b) => a.area.localeCompare(b.area) || a.name.localeCompare(b.name));
+    }
+    return { rooms, types: L.TYPES };
+  },
+  async setLightType({ homey, body }) {
+    const t = homey.settings.get('lightTypes') || {};
+    if (body.type) t[body.id] = body.type; else delete t[body.id];
+    homey.settings.set('lightTypes', t); return true;
+  },
+  async setLightGlow({ homey, body }) {
+    // glow flag lives in the room-lights config of the lamp's own zone (and its ancestors that list it)
+    const H = require('./lib/homeyApi');
+    const { devices, zones } = await H.snapshot(homey);
+    const d = devices[body.id]; if (!d) throw new Error('Unknown lamp');
+    const cfg = homey.settings.get('roomLights') || {};
+    // every zone whose room-tree contains this lamp keeps its own excluded list; update them all
+    for (const z of Object.keys(zones)) {
+      if (!H.zoneTree(zones, z).has(d.zone)) continue;
+      const c = cfg[z] || { excluded: [], extra: [] };
+      c.excluded = (c.excluded || []).filter((x) => x !== d.id);
+      if (!body.glow) c.excluded.push(d.id);
+      if (c.excluded.length || (c.extra || []).length) cfg[z] = c; else delete cfg[z];
+    }
+    homey.settings.set('roomLights', cfg); return true;
+  },
+
   /* ----- rooms & lights (window glow in the Shutters widget) ----- */
   async getRoomLights({ homey }) { return require('./lib/roomLights').rooms(homey); },
   async saveRoomLights({ homey, body }) { return require('./lib/roomLights').save(homey, body.zoneId, body); },
+
+  /* ----- scene editor: lights on Homey (any app) with their current state ----- */
+  async getSceneLights({ homey }) {
+    const H = require('./lib/homeyApi'); const L = require('./lib/lights');
+    const { devices, zones } = await H.snapshot(homey);
+    const moods = (await H.moods(homey)).map((m) => ({ id: m.id, name: m.name, zone: m.zone }));
+    const byZone = {};
+    for (const d of Object.values(devices).filter((x) => H.isLight(x) && !H.isOurs(homey, x))) {
+      const z = byZone[d.zone] = byZone[d.zone] || { zoneId: d.zone, name: H.zonePath(zones, d.zone) || 'Unassigned', lamps: [], moods: moods.filter((m) => m.zone === d.zone) };
+      const info = L.describe(homey, d);
+      z.lamps.push({ id: d.id, name: d.name, type: info.type, on: info.on, dim: info.dim, hasDim: info.hasDim, hasColour: info.hasColour, hasTemp: info.hasTemp,
+        hue: H.capValue(d, 'light_hue'), sat: H.capValue(d, 'light_saturation'), temp: H.capValue(d, 'light_temperature'), colour: info.colour, group: /group/i.test(String(d.driverId || '')) });
+    }
+    return Object.values(byZone).sort((a, b) => a.name.localeCompare(b.name)).map((z) => ({ ...z, lamps: z.lamps.sort((a, b) => (b.group ? 1 : 0) - (a.group ? 1 : 0) || a.name.localeCompare(b.name)) }));
+  },
+
+  /* ----- scene editor: climate devices on Homey (any app) except this app's own thermostats ----- */
+  async getSceneClimate({ homey }) {
+    const H = require('./lib/homeyApi');
+    const { devices, zones } = await H.snapshot(homey);
+    const opts = (d, id) => { const c = H.cap(d, id); return c ? { value: c.value, values: (c.values || []).map((v) => ({ id: v.id, title: (v.title && (v.title.en || v.title)) || v.id })) } : null; };
+    return Object.values(devices).filter((d) => d.class === 'thermostat' && !H.isOurs(homey, d))
+      .map((d) => ({ id: d.id, name: d.name, zone: H.zonePath(zones, d.zone) || '', target: H.capValue(d, 'target_temperature'), temp: H.capValue(d, 'measure_temperature'),
+        mode: opts(d, 'thermostat_mode'), fan: opts(d, 'thermostat_fan_speed'), onoff: H.cap(d, 'onoff') ? !!H.capValue(d, 'onoff') : null,
+        min: (H.cap(d, 'target_temperature') || {}).min ?? 5, max: (H.cap(d, 'target_temperature') || {}).max ?? 30, step: (H.cap(d, 'target_temperature') || {}).step ?? 0.5 }))
+      .sort((a, b) => a.zone.localeCompare(b.zone) || a.name.localeCompare(b.name));
+  },
 
   /* ----- scenes ----- */
   async getScenes({ homey }) { return homey.app.scenes.list(); },

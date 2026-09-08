@@ -2,6 +2,53 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.11.3] — 2026-09-08
+
+### Added
+- Scenes can include **lights on Homey** (any app): a lamp with on/off, brightness and its captured colour, a room
+  "all off", or a Homey mood. "Capture current" adds every lamp that is on with its current level and colour.
+- Scenes can include **thermostats and air conditioners from other apps**: power, mode, target, fan speed (unset = keep).
+- Lights tab: group devices (Homey Group app and similar) shown with their members collapsed underneath; members
+  inherit the group's lamp type unless set on their own ("Same as group" restores inheritance). One section per room,
+  areas inside it; the glow switch only where the room has shutters. Expanded groups survive the refresh.
+
+## [0.11.2] — 2026-09-08
+
+### Added
+- Lamp types **Wall switch** (Legrand plate with a rocker whose pressed half moves with the state), **Wall light** and
+  **Outdoor** lantern. Legrand on/off switches default to Wall switch; terrace / balcony / wall names are guessed.
+
+## [0.11.1] — 2026-09-08
+
+### Added
+- Shutters: `windowcoverings_state` is back as a Flow-only capability — "Set state" up / down opens / closes, "The state
+  changed / is" reflects the motor direction. No buttons in the device UI (Legrand modules cannot stop mid-way; "idle" is refused).
+- Hints (ⓘ) on all of the app's own Flow cards.
+
+## [0.11.0] — 2026-09-08
+
+### Added
+- **Lights widget**: any light on Homey (Hue, IKEA, Legrand…). Tiles or room cards; each lamp drawn by type
+  (ceiling, floor, table, bulb, strip, spot) in its real colour and brightness; tap to toggle; "All off";
+  Homey moods of the room as buttons.
+- **Climate widget**: any thermostat-class device. Gauge room cards that adapt to the device — Smarther rooms get
+  ± setpoint, profile chips and "Plan"; air conditioners get modes, fan speed, swing / eco / boost and outside
+  temperature; warm / cool / grey tints by state. Compact list layout.
+- **Lights tab** in app settings: every light on Homey by room with a lamp-type picker (auto-guessed from the
+  name) and the window-glow switch; Homey moods listed. "Rooms & lights" moved here from the Devices tab.
+- Heating engine: per-room profile (sets the room to that profile's temperature as a manual hold).
+
+## [0.10.6] — 2026-09-08
+
+### Fixed
+- Rooms & lights: a room now includes its sub-zones — lamps in areas inside a room count for that room's windows
+  and are listed under it (with the area name) instead of only under "other rooms".
+
+## [0.10.5] — 2026-09-08
+
+### Added
+- Shutters widget setting "Show the room light on the windows" (on by default) to hide the pendant and its glow.
+
 ## [0.10.4] — 2026-09-08
 
 ### Fixed

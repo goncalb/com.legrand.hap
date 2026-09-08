@@ -12,6 +12,12 @@ class LegrandHapApp extends Homey.App {
     this.logger = new Logger(500);
     const hlog = (level, serial, msg) => { this.logger.add(level, serial, msg); this.log(`[${serial || 'app'}] ${msg}`); };
     this.hlog = hlog;
+    // Runtime and SDK messages (deprecations, unhandled errors) otherwise only reach stdout — mirror them into the Log tab.
+    const origWarn = console.warn.bind(console), origError = console.error.bind(console);
+    console.warn = (...a) => { this.logger.add('warn', null, `runtime: ${a.map(String).join(' ')}`); origWarn(...a); };
+    console.error = (...a) => { this.logger.add('error', null, `runtime: ${a.map(String).join(' ')}`); origError(...a); };
+    process.on('warning', (w) => this.logger.add('warn', null, `runtime: ${w.name}: ${w.message}`));
+    process.on('unhandledRejection', (r) => this.logger.add('error', null, `unhandled: ${r && r.stack ? r.stack.split('\n')[0] : r}`));
 
     this._migrateSettings();
 

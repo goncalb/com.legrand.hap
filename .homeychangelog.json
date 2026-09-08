@@ -1,4 +1,22 @@
 {
+  "0.11.3": {
+    "en": "Scenes can include any Homey light, a room all-off or a Homey mood. Lights tab groups by room with grouped devices."
+  },
+  "0.11.2": {
+    "en": "Lights widget: wall switch, wall light and outdoor lamp types."
+  },
+  "0.11.1": {
+    "en": "Shutter up/down Flow cards; hints on all Flow cards."
+  },
+  "0.11.0": {
+    "en": "New Lights and Climate dashboard widgets (any Homey light or thermostat, incl. air conditioners). Lights tab in settings."
+  },
+  "0.10.6": {
+    "en": "Rooms & lights: sub-zones count as part of their room."
+  },
+  "0.10.5": {
+    "en": "Shutters widget: option to hide the room light on the windows."
+  },
   "0.10.4": {
     "en": "Window glow updates within seconds of a lamp switching."
   },

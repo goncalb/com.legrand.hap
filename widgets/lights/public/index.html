@@ -1,0 +1,158 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/>
+<style>
+  :root { --lg-card: var(--homey-color-mono-000, #fff); --lg-border: var(--homey-color-mono-200, #e3e3e3); --lg-brand: #DA5046; --lg-text: var(--homey-text-color, #1c1c1e); --lg-muted: var(--homey-text-color-light, #8a8a8e); --lg-chip: #f7f7f9; }
+  @media (prefers-color-scheme: dark) { :root { --lg-card: #3a3a3c; --lg-border: #48484a; --lg-brand: #f0716a; --lg-text: #f2f2f7; --lg-muted: #c7c7cc; --lg-chip: #48484a; } }
+  html, body { margin: 0; overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+  body { font-family: var(--homey-font-family-default, -apple-system, sans-serif); color: var(--lg-text); font-size: 12px; }
+  .grid { display: grid; gap: 8px; padding: 8px; width: 100%; box-sizing: border-box; }
+  .card { border: 2px solid var(--lg-border); border-radius: 10px; padding: 6px 4px 6px; text-align: center; background: var(--lg-card); cursor: pointer; user-select: none; min-width: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+  .card .art { height: 64px; display: flex; align-items: center; justify-content: center; }
+  .card:active { transform: scale(.97); }
+  .card.off { opacity: .8; }
+  .card.unavail { opacity: .45; }
+  .card .nm { font-size: 11px; font-weight: 600; color: var(--lg-brand); line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; height: 26px; width: 100%; overflow-wrap: normal; hyphens: none; }
+  .card .v { font-size: 10px; color: var(--lg-muted); }
+  .card svg { display: block; }
+  .room { margin: 8px; border: 2px solid var(--lg-border); border-radius: 12px; background: var(--lg-card); padding: 8px 10px; }
+  .room .hd { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+  .room .hd .t { font-weight: 600; color: var(--lg-brand); flex: 1; }
+  .room .hd .s { font-size: 10px; color: var(--lg-muted); }
+  .room .lamps { display: flex; flex-wrap: wrap; gap: 6px; justify-content: space-around; }
+  .room .lamp { text-align: center; cursor: pointer; user-select: none; width: 64px; }
+  .room .lamp .art { height: 56px; display: flex; align-items: center; justify-content: center; }
+  .room .lamp .n { font-size: 9px; color: var(--lg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .room .btns { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .btn { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--lg-border); background: var(--lg-chip); color: var(--lg-text); font-size: 11px; cursor: pointer; }
+  .btn.brand { border-color: var(--lg-brand); color: var(--lg-brand); font-weight: 600; background: var(--lg-card); }
+  .btn.fill { border-color: var(--lg-brand); background: var(--lg-brand); color: #fff; font-weight: 600; }
+  .btn.mood { border: 1.5px solid var(--lg-brand); color: var(--lg-text); }
+  .btn.mood.active { background: var(--lg-brand) !important; color: #fff; }
+  .foot { padding: 0 8px 8px; }
+  .empty { padding: 14px; color: var(--lg-muted); text-align: center; }
+  .panel { margin: 0 8px 8px; border: 2px solid var(--lg-brand); border-radius: 12px; background: var(--lg-card); padding: 8px 10px; }
+  .panel .hd { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .panel .hd .t { font-weight: 600; color: var(--lg-brand); flex: 1; }
+  .panel .x { border: none; background: none; color: var(--lg-muted); font-size: 16px; cursor: pointer; }
+  .panel .r { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 11px; }
+  .panel .r label { width: 64px; color: var(--lg-muted); }
+  .panel .r.inactive { opacity: .4; }
+  .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--lg-border); vertical-align: middle; }
+  .panel input[type=range] { flex: 1; }
+  .hue { -webkit-appearance: none; height: 10px; border-radius: 5px; background: linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
+  .temp { -webkit-appearance: none; height: 10px; border-radius: 5px; background: linear-gradient(to right, #dff4ff, #ffc966); }
+</style></head>
+<body>
+<div id="root"></div>
+<div id="panel" class="panel" style="display:none"></div>
+<div id="foot" class="foot" style="display:none"><button class="btn brand" style="width:100%" onclick="allOff()">All off</button></div>
+<script type="text/javascript">
+  let HomeyRef, S = {}, ids = [], data = { lamps: [], moods: [] };
+  const pending = new Map();
+  let panelId = null, pressTimer = null, pressed = false, sliding = false;   // lamp id -> { on, until }: state we asked for, held until confirmed or expired
+  const domId = (id) => String(id).replace(/[^a-zA-Z0-9]/g, '_');
+  const esc = (s) => String(s).replace(/</g, '&lt;');
+  // Lamp drawings (60×60 box). Glow uses the lamp's real colour, scaled by brightness.
+  function lampSvg(l, size) {
+    const lit = l.on && l.available, c = l.colour || '#ffd166';
+    const a = lit ? (0.12 + 0.28 * ((l.dim == null ? 100 : l.dim) / 100)) : 0;
+    const shade = lit ? c : '#8a8a8e', dark = '#8a8a8e';
+    let g = '';
+    if (l.type === 'ceiling') g = `<polygon points="25,14 35,14 58,60 2,60" fill="${c}" fill-opacity="${a}"/><line x1="30" y1="0" x2="30" y2="6" stroke="${dark}" stroke-width="1.2"/><path d="M21 14 L39 14 L34 6 L26 6 Z" fill="${shade}"/>${lit ? `<ellipse cx="30" cy="14.5" rx="6" ry="2" fill="#fff4c2"/>` : ''}`;
+    else if (l.type === 'floor') g = `<polygon points="20,18 40,18 50,44 10,44" fill="${c}" fill-opacity="${a}"/><path d="M20 18 L40 18 L36 6 L24 6 Z" fill="${shade}"/><line x1="30" y1="18" x2="30" y2="56" stroke="${dark}" stroke-width="2"/><ellipse cx="30" cy="57" rx="9" ry="2.5" fill="${dark}"/>`;
+    else if (l.type === 'table') g = `<polygon points="16,26 44,26 52,48 8,48" fill="${c}" fill-opacity="${a}"/><path d="M16 26 L44 26 L39 12 L21 12 Z" fill="${shade}"/><line x1="30" y1="26" x2="30" y2="44" stroke="${dark}" stroke-width="2"/><ellipse cx="30" cy="46" rx="8" ry="2.5" fill="${dark}"/>`;
+    else if (l.type === 'strip') g = `<rect x="4" y="22" width="52" height="22" rx="8" fill="${c}" fill-opacity="${a}"/><rect x="6" y="30" width="48" height="6" rx="3" fill="${lit ? c : '#c7c7cc'}"/>`;
+    else if (l.type === 'spot') g = `<polygon points="26,16 34,16 46,56 14,56" fill="${c}" fill-opacity="${a}"/><rect x="20" y="4" width="20" height="5" rx="2" fill="${dark}"/><path d="M24 16 L36 16 L34 9 L26 9 Z" fill="${shade}"/>`;
+    else if (l.type === 'switch') g = `<rect x="12" y="8" width="36" height="44" rx="4" fill="#f7f7f9" stroke="${dark}" stroke-width="1.5"/><rect x="20" y="16" width="20" height="28" rx="3" fill="${lit ? c : '#d1d1d6'}" stroke="${dark}" stroke-width="1"/>${lit ? '<path d="M20 19 a3 3 0 0 1 3 -3 h14 a3 3 0 0 1 3 3 v11 h-20 z" fill="#000" fill-opacity="0.10"/>' : '<path d="M20 30 h20 v11 a3 3 0 0 1 -3 3 h-14 a3 3 0 0 1 -3 -3 z" fill="#000" fill-opacity="0.08"/>'}<circle cx="30" cy="48" r="1.6" fill="${lit ? c : '#c7c7cc'}"/>`;
+    else if (l.type === 'wall') g = `<polygon points="18,30 42,30 52,8 8,8" fill="${c}" fill-opacity="${a * 0.8}"/><polygon points="18,34 42,34 52,56 8,56" fill="${c}" fill-opacity="${a}"/><path d="M16 30 L44 30 L40 22 L20 22 Z" fill="${shade}"/><rect x="27" y="30" width="6" height="6" fill="${dark}"/>`;
+    else if (l.type === 'outdoor') g = `<circle cx="30" cy="28" r="20" fill="${c}" fill-opacity="${a * 0.7}"/><line x1="30" y1="4" x2="30" y2="10" stroke="${dark}" stroke-width="1.5"/><path d="M20 12 L40 12 L36 44 L24 44 Z" fill="${lit ? c : '#e5e5ea'}" stroke="${dark}" stroke-width="1.5"/><path d="M18 12 L42 12 L38 8 L22 8 Z" fill="${dark}"/><rect x="26" y="44" width="8" height="4" fill="${dark}"/>`;
+    else g = `<circle cx="30" cy="26" r="20" fill="${c}" fill-opacity="${a}"/><circle cx="30" cy="26" r="11" fill="${lit ? c : '#d1d1d6'}" stroke="${dark}" stroke-width="1.2"/><rect x="25" y="36" width="10" height="6" rx="1" fill="${dark}"/><rect x="26.5" y="42" width="7" height="4" rx="1" fill="#6e6e73"/>`;
+    return `<svg viewBox="0 0 60 60" width="${size}" height="${size}">${g}</svg>`;
+  }
+  const stateText = (l) => !l.available ? 'unreachable' : !l.on ? 'off' : (l.dim != null && l.hasDim ? `on · ${l.dim} %` : 'on');
+  function render() {
+    const root = document.getElementById('root');
+    const lamps = data.lamps;
+    if (!lamps.length) { root.innerHTML = '<div class="empty">No lights selected.</div>'; setH(50); return; }
+    if (S.layout === 'room') {
+      const zones = [...new Set(lamps.map((l) => l.zone))];
+      root.innerHTML = zones.map((z) => {
+        const ls = lamps.filter((l) => l.zone === z), on = ls.filter((l) => l.on && l.available).length;
+        const moods = S.moods === false ? [] : data.moods.filter((m) => m.zone === z);
+        return `<div class="room"><div class="hd"><span class="t">${esc(ls[0].zoneName)}</span><span class="s">${on ? `${on} of ${ls.length} on` : 'all off'}</span></div>` +
+          `<div class="lamps">${ls.map((l) => `<div class="lamp" onclick="tapLamp('${l.id}')" onpointerdown="pressStart('${l.id}')" onpointerup="pressEnd()" onpointerleave="pressEnd()" oncontextmenu="return false"><div class="art">${lampSvg(l, 52)}</div><div class="n" title="${esc(l.name)}">${esc(l.name)}</div><div class="n">${stateText(l)}</div></div>`).join('')}</div>` +
+          `<div class="btns">${S.alloff === false ? '' : `<button class="btn brand" onclick="allOff('${z}')">All off</button>`}${moods.map(moodBtn).join('')}</div></div>`;
+      }).join('');
+      document.getElementById('foot').style.display = 'none';
+      setH(document.body.scrollHeight);
+    } else {
+      const cols = Number(S.columns || 3);
+      root.innerHTML = `<div class="grid" style="grid-template-columns:repeat(${cols},1fr)">` + lamps.map((l) =>
+        `<div class="card${l.on ? '' : ' off'}${l.available ? '' : ' unavail'}" onclick="tapLamp('${l.id}')" onpointerdown="pressStart('${l.id}')" onpointerup="pressEnd()" onpointerleave="pressEnd()" oncontextmenu="return false"><div class="nm" title="${esc(l.name)}">${esc(l.name)}</div><div class="art">${lampSvg(l, 56)}</div><div class="v">${stateText(l)}</div></div>`).join('') + '</div>';
+      document.getElementById('foot').style.display = S.alloff === false ? 'none' : 'block';
+      setH(document.body.scrollHeight);
+    }
+  }
+  function setH(h) { if (HomeyRef.setHeight) HomeyRef.setHeight(h); }
+  function applyPending(res) {
+    const now = Date.now();
+    for (const l of res.lamps) {
+      const p = pending.get(l.id);
+      if (!p) continue;
+      if (l.on === p.on || now > p.until) pending.delete(l.id);   // confirmed, or gave up
+      else l.on = p.on;                                             // not yet reflected: keep what we asked for
+    }
+    return res;
+  }
+  function load(fresh) {
+    HomeyRef.api('GET', '/lights?ids=' + encodeURIComponent(ids.join(',')) + '&moods=' + (S.moods === false ? '0' : '1') + (fresh ? '&fresh=1' : ''))
+      .then((res) => { data = applyPending(res); render(); if (panelId && !sliding) renderPanel(); })
+      .catch((e) => { document.getElementById('root').innerHTML = '<div class="empty">' + esc(e && e.message || e) + '</div>'; });
+  }
+  // long press opens the controls panel; a short tap toggles
+  function pressStart(id) { pressed = false; clearTimeout(pressTimer); pressTimer = setTimeout(() => { pressed = true; openPanel(id); }, 500); }
+  function pressEnd() { clearTimeout(pressTimer); }
+  function tapLamp(id) { if (pressed) { pressed = false; return; } toggle(id); }
+  function openPanel(id) { panelId = id; renderPanel(); }
+  function closePanel() { panelId = null; renderPanel(); }
+  function renderPanel() {
+    const el = document.getElementById('panel');
+    const l = panelId && data.lamps.find((x) => x.id === panelId);
+    if (!l) { el.style.display = 'none'; el.innerHTML = ''; setH(document.body.scrollHeight); return; }
+    let rows = `<div class="r"><label>Power</label><button class="btn ${l.on ? 'fill' : ''}" onclick="setCap('${l.id}','onoff',${!l.on})">${l.on ? 'On' : 'Off'}</button></div>`;
+    if (l.hasDim) rows += `<div class="r"><label>Brightness</label><input type="range" min="1" max="100" value="${l.dim == null ? 100 : l.dim}" onchange="setCap('${l.id}','dim',this.value/100)"><span>${l.dim == null ? '' : l.dim + ' %'}</span></div>`;
+    const colourMode = l.mode === 'color' || (l.hasColour && !l.hasTemp);
+    if (l.hasTemp) rows += `<div class="r${l.hasColour && colourMode ? ' inactive' : ''}"><label>White</label><input class="temp" type="range" min="0" max="100" value="${Math.round((l.temp == null ? 0.5 : l.temp) * 100)}" onchange="setCap('${l.id}','light_temperature',this.value/100)"></div>`;
+    if (l.hasColour) rows += `<div class="r${l.hasTemp && !colourMode ? ' inactive' : ''}"><label>Colour</label><input class="hue" type="range" min="0" max="100" value="${Math.round((l.hue == null ? 0 : l.hue) * 100)}" onchange="setColour('${l.id}',this.value/100)"></div>`;
+    const moods = S.moods === false ? [] : data.moods.filter((m) => m.zone === l.zone);
+    if (moods.length) rows += `<div class="r"><label>Moods</label><span style="display:flex; gap:6px; flex-wrap:wrap">${moods.map(moodBtn).join('')}</span></div>`;
+    el.innerHTML = `<div class="hd"><span class="swatch" style="background:${l.on && l.available ? l.colour : '#d1d1d6'}"></span><span class="t">${esc(l.name)}</span><span style="font-size:10px; color:var(--lg-muted)">${esc(l.zoneName)}</span><button class="x" onclick="closePanel()">✕</button></div>${rows}`;
+    el.style.display = 'block'; setH(document.body.scrollHeight);
+    el.querySelectorAll('input[type=range]').forEach((i) => { i.onpointerdown = () => { sliding = true; }; i.onpointerup = i.onpointercancel = () => { sliding = false; }; });
+  }
+  function setCap(id, cap, value) { HomeyRef.api('POST', '/set', { id, cap, value }).then(() => setTimeout(() => load(true), 1200)).catch(() => load(true)); }
+  function setColour(id, hue) { HomeyRef.api('POST', '/set', { id, cap: 'light_mode', value: 'color' }).catch(() => {}); HomeyRef.api('POST', '/set', { id, cap: 'light_saturation', value: 1 }).catch(() => {}); setCap(id, 'light_hue', hue); }
+  function expect(id, on) { pending.set(id, { on, until: Date.now() + 5000 }); const l = data.lamps.find((x) => x.id === id); if (l) l.on = on; }
+  function toggle(id) { const l = data.lamps.find((x) => x.id === id); if (!l) return; expect(id, !l.on); render(); HomeyRef.api('POST', '/toggle', { id }).then(() => setTimeout(() => load(true), 1200)).catch(() => load(true)); }
+  function allOff(zone) { data.lamps.forEach((l) => { if (!zone || l.zone === zone) expect(l.id, false); }); render(); HomeyRef.api('POST', '/all-off', { ids, zone: zone || null }).then(() => setTimeout(() => load(true), 1500)).catch(() => load(true)); }
+  const activeMoods = new Map();   // mood id -> until (shown filled for a moment after pressing)
+  function moodBtn(m) {
+    const active = (activeMoods.get(m.id) || 0) > Date.now();
+    const bg = m.colour ? `background:${m.colour}55;` : '';
+    return `<button class="btn mood${active ? ' active' : ''}" style="${bg}" onclick="mood('${m.id}')">${esc(m.name)}</button>`;
+  }
+  function mood(id) {
+    activeMoods.set(id, Date.now() + 2000); render(); if (panelId) renderPanel();
+    HomeyRef.api('POST', '/mood', { id })
+      .then(() => setTimeout(() => load(true), 1500))
+      .catch((e) => { activeMoods.delete(id); const el = document.getElementById('panel'); if (el.style.display !== 'none') el.insertAdjacentHTML('beforeend', `<div class="r" style="color:var(--lg-brand)">${esc(e && e.message || e)}</div>`); load(true); });
+    setTimeout(() => { render(); if (panelId) renderPanel(); }, 2100);
+  }
+  function onHomeyReady(Homey) {
+    HomeyRef = Homey; Homey.ready();
+    S = Homey.getSettings ? Homey.getSettings() : {};
+    ids = (Homey.getDeviceIds && Homey.getDeviceIds()) || [];
+    load(); setInterval(() => load(false), 5000);
+  }
+</script>
+</body></html>

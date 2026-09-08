@@ -1,4 +1,15 @@
 {
-  "title": { "en": "Thermostat !{{is|isn't}} heating" },
-  "args": [ { "type": "device", "name": "device", "filter": "driver_id=thermostat" } ]
+  "title": {
+    "en": "Thermostat !{{is|isn't}} heating"
+  },
+  "args": [
+    {
+      "type": "device",
+      "name": "device",
+      "filter": "driver_id=thermostat"
+    }
+  ],
+  "hint": {
+    "en": "True while the thermostat is calling for heat."
+  }
 }

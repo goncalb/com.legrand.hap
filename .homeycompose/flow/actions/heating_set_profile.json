@@ -6,7 +6,7 @@
     "en": "Set heating to [[profile]] [[duration]]"
   },
   "hint": {
-    "en": "Overrides the house heating plan for all rooms that follow it."
+    "en": "Puts the whole house on a profile for the chosen duration, on top of the weekly plan. Rooms that don't follow the plan are not affected."
   },
   "args": [
     {

@@ -38,6 +38,17 @@
         "en": "Show Open / Shade / Close buttons"
       },
       "value": true
+    },
+    {
+      "id": "lamp",
+      "type": "checkbox",
+      "title": {
+        "en": "Show the room light on the windows"
+      },
+      "hint": {
+        "en": "Pendant lamp above each window, lit when a lamp of that room is on (App settings → Devices → Rooms & lights)."
+      },
+      "value": true
     }
   ],
   "api": {
