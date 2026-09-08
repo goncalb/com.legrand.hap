@@ -1,6 +1,6 @@
 {
   "id": "com.legrand.hap",
-  "version": "0.10.0",
+  "version": "0.10.4",
   "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [
@@ -100,13 +100,13 @@
       "method": "POST",
       "path": "/heating-resume"
     },
-    "getShutterLights": {
+    "getRoomLights": {
       "method": "GET",
-      "path": "/shutter-lights"
+      "path": "/room-lights"
     },
-    "saveShutterLights": {
+    "saveRoomLights": {
       "method": "POST",
-      "path": "/shutter-lights"
+      "path": "/room-lights"
     }
   },
   "images": {

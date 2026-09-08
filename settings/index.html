@@ -108,6 +108,9 @@
     <div class="section">Sensors</div><div class="group" id="list-sensor"></div>
     <div class="section">&nbsp;</div>
     <div class="group"><div class="row link" onclick="refreshDb()"><div class="main"><div class="t">Refresh from gateway</div></div><span id="dbstate" class="v"></span></div></div>
+
+    <div class="section">Rooms &amp; lights <span style="text-transform:none; letter-spacing:0">— window glow in the Shutters widget</span></div>
+    <div class="group" id="roomlist"><div class="row"><div class="main muted">Loading…</div></div></div>
   </div>
 
   <!-- SCENES -->
@@ -310,10 +313,10 @@
     Homey.get('exposeStandardTilt', (err, v) => { if (!err) document.getElementById('exposeStd').checked = !!v; });
     Homey.get('heatingNotify', (err, v) => { if (!err) document.getElementById('h-notify').checked = !!v; });
     Homey.get('heatingNotifyRooms', (err, v) => { if (!err) document.getElementById('h-notify-rooms').checked = !!v; });
-    pairingStatus(); loadDevices(); loadLog();
+    pairingStatus(); loadDevices(); loadRooms(); loadLog();
     setInterval(() => {
       if (document.getElementById('log-tab').classList.contains('active') && document.getElementById('auto').checked) loadLog();
-      if (document.getElementById('devices').classList.contains('active') && !document.querySelector('#devices input[type=text], #devices input[name=lm]')) loadDevices();
+      if (document.getElementById('devices').classList.contains('active') && !document.querySelector('#devices input[type=text]') && !document.querySelector('#roomlist details[open]')) loadDevices();
     }, 5000);
   }
 
@@ -414,60 +417,34 @@
       '<span class="v">' + esc(d.status || '') + '</span>' +
       (isGw ? '' : '<button class="text" onclick="identify(\'' + esc(d.serial) + '\')">Blink</button>' +
         (d.added ? '' : '<button class="text" onclick="renameDevice(\'' + esc(d.serial) + '\', this)">Name</button>') +
-        ((d.klass === 'shutter' && d.added) ? '<button class="text" onclick="editLights(\'' + esc(d.serial) + '\', this)">Lights</button>' : '')) + '</div>';
+        '') + '</div>';
   }
 
-  /* ---------- shutter ↔ room lights (window glow in the Shutters widget) ---------- */
-  function editLights(serial, btn) {
-    const row = btn.closest('.row');
-    HomeyRef.api('GET', '/shutter-lights?serial=' + encodeURIComponent(serial), null, (err, res) => {
-      if (err) return HomeyRef.alert('Could not load lights: ' + err.message);
-      const cfg = res.config || { mode: 'auto', lamps: [] };
-      let html = '<div class="main"><div class="t">Light source for the window glow</div>' +
-        '<div class="d" style="margin-top:6px">' +
-        '<label style="display:block; margin:6px 0"><input type="radio" name="lm" value="auto" ' + (cfg.mode === 'auto' ? 'checked' : '') + '> Auto — lights in the same Homey room' + (res.zone ? ' (' + esc(res.zone) + ')' : '') + '</label>' +
-        '<label style="display:block; margin:6px 0"><input type="radio" name="lm" value="lamps" ' + (cfg.mode === 'lamps' ? 'checked' : '') + '> Choose lamps</label>' +
-        '<div id="lamplist" style="margin:0 0 6px 22px; max-height:180px; overflow:auto">';
-      let lastZone = null;
-      for (const l of res.lights) {
-        if (l.zone !== lastZone) { html += '<div style="font-size:10px; color:#8a8a8e; margin:6px 0 2px; text-transform:uppercase">' + esc(l.zone || 'No room') + '</div>'; lastZone = l.zone; }
-        html += '<label style="display:block; margin:3px 0"><input type="checkbox" class="lamp" value="' + esc(l.id) + '" ' + ((cfg.lamps || []).includes(l.id) ? 'checked' : '') + '> ' + esc(l.name) + (l.on ? ' <span class="pill" style="background:#fff3c4">on</span>' : '') + '</label>';
-      }
-      html += '</div><label style="display:block; margin:6px 0"><input type="radio" name="lm" value="none" ' + (cfg.mode === 'none' ? 'checked' : '') + '> None — no glow for this window</label>';
-      if (res.siblings.length) {
-        html += '<div style="margin-top:8px">Apply the same to: ' + res.siblings.map((sb) => '<label style="margin-right:10px"><input type="checkbox" class="sib" value="' + esc(sb.serial) + '"> ' + esc(sb.name) + '</label>').join('') + '</div>';
-      }
-      html += '<div style="margin-top:10px"><button class="primary" onclick="saveLights(\'' + esc(serial) + '\', this)">Save</button> <button onclick="loadDevices()">Cancel</button></div></div></div>';
-      row.innerHTML = html;
+  /* ---------- rooms & lights (window glow in the Shutters widget) ---------- */
+  function loadRooms() {
+    HomeyRef.api('GET', '/room-lights', null, (err, rooms) => {
+      const el = document.getElementById('roomlist');
+      if (err) { el.innerHTML = '<div class="row"><div class="main muted">' + esc(err.message) + '</div></div>'; return; }
+      if (!rooms.length) { el.innerHTML = '<div class="row"><div class="main muted">Rooms appear here once shutters are added and placed in a Homey room.</div></div>'; return; }
+      el.innerHTML = rooms.map((r, i) => {
+        const ticked = r.lights.filter((l) => l.checked).length + r.extra.length;
+        const total = r.lights.length + r.extra.length;
+        const lampRow = (l, cls, checked) => '<label style="display:flex; align-items:center; gap:8px; padding:5px 0"><input type="checkbox" class="' + cls + '" value="' + esc(l.id) + '"' + (checked ? ' checked' : '') + ' style="margin:0"> <span style="flex:1">' + esc(l.name) + (l.zone ? ' <span class="muted">(' + esc(l.zone) + ')</span>' : '') + '</span>' + (l.on ? '<span class="pill" style="background:#fff3c4">on</span>' : '') + '</label>';
+        return '<details data-zone="' + esc(r.zoneId) + '"><summary><span style="flex:1">' + esc(r.zone) + '</span><span class="muted" style="margin-right:8px">' + r.shutters.length + ' shutter' + (r.shutters.length === 1 ? '' : 's') + ' · ' + ticked + ' of ' + total + ' lamp' + (total === 1 ? '' : 's') + '</span></summary>' +
+          '<div class="help"><p class="muted" style="margin:0 0 4px">Lamps that light this room — a window glows when any ticked lamp is on. Shutters: ' + esc(r.shutters.join(', ')) + '</p>' +
+          (r.lights.length ? r.lights.map((l) => lampRow(l, 'own', l.checked)).join('') : '<p class="muted">No lights in this room.</p>') +
+          (r.extra.length ? '<p class="muted" style="margin:8px 0 2px">From other rooms</p>' + r.extra.map((l) => lampRow(l, 'extra', true)).join('') : '') +
+          (r.others.length ? '<details style="margin-top:6px; border:none"><summary style="padding:4px 0; font-size:12px; color:#2b6de8">＋ lamp from another room</summary><div style="max-height:160px; overflow:auto">' + r.others.map((l) => lampRow(l, 'extra', false)).join('') + '</div></details>' : '') +
+          '<div style="margin-top:10px"><button class="primary" onclick="saveRoom(this)">Save</button> <button onclick="loadRooms()">Cancel</button></div></div></details>';
+      }).join('');
     });
   }
-  function saveLights(serial, btn) {
-    const root = btn.closest('.row');
-    const mode = (root.querySelector('input[name=lm]:checked') || {}).value || 'auto';
-    const lamps = [...root.querySelectorAll('input.lamp:checked')].map((i) => i.value);
-    const applyTo = [...root.querySelectorAll('input.sib:checked')].map((i) => i.value);
-    HomeyRef.api('POST', '/shutter-lights', { serial, config: { mode, lamps }, applyTo }, (err) => {
-      if (err) return HomeyRef.alert('Could not save: ' + err.message);
-      loadDevices();
-    });
-  }
-
-  // Inline rename for accessories not yet added in Homey: the name is used when the device is added.
-  function renameDevice(serial, btn) {
-    const row = btn.closest('.row');
-    const info = row.querySelector('.main');
-    const current = row.dataset.name || '';
-    info.innerHTML = '<input type="text" class="full" value="' + esc(current) + '" placeholder="Name to use when adding" />' +
-      '<div class="d" style="margin-top:6px"><button class="primary" onclick="saveName(\'' + esc(serial) + '\', this)">Save</button> ' +
-      '<button onclick="loadDevices()">Cancel</button></div>';
-    info.querySelector('input').focus();
-  }
-  function saveName(serial, btn) {
-    const name = btn.closest('.main').querySelector('input').value.trim();
-    HomeyRef.api('POST', '/device-name', { serial, name }, (err) => {
-      if (err) return HomeyRef.alert('Could not save name: ' + err.message);
-      loadDevices();
-    });
+  function saveRoom(btn) {
+    const det = btn.closest('details[data-zone]');
+    const zoneId = det.dataset.zone;
+    const excluded = [...det.querySelectorAll('input.own')].filter((i) => !i.checked).map((i) => i.value);
+    const extra = [...det.querySelectorAll('input.extra:checked')].map((i) => i.value);
+    HomeyRef.api('POST', '/room-lights', { zoneId, excluded, extra }, (err) => { if (err) return HomeyRef.alert('Could not save: ' + err.message); loadRooms(); });
   }
 
   function loadDevices() {

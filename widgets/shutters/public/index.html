@@ -11,8 +11,6 @@
   .strip { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; }
   .card.sel { border-color: var(--lg-brand); background: var(--lg-sel); }
   .card { cursor: pointer; user-select: none; flex: 0 0 calc((100% - 16px) / 3); max-width: calc((100% - 16px) / 3); box-sizing: border-box; border: 2px solid var(--lg-border); border-radius: 10px; padding: 6px 4px; text-align: center; background: var(--lg-card); position: relative; overflow: hidden; }
-  .card .glow { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 20%, rgba(255,180,84,.28), rgba(255,180,84,0) 70%); pointer-events: none; display: none; }
-  .card.lit .glow { display: block; }
   .card .nm { font-size: 11px; font-weight: 600; color: var(--lg-brand); line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 26px; white-space: normal; overflow-wrap: normal; word-break: keep-all; }
   .card .v { font-size: 11px; color: var(--lg-muted); }
   .card svg { display: block; margin: 4px auto 2px; }
@@ -58,25 +56,29 @@
   }
   function shutterSvg(d) {
     const h = curtainH(d.position), k = domId(d.id);
-    return '<svg viewBox="0 0 60 66" width="56" height="62"><defs>' +
-      '<linearGradient id="sky-' + k + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + SKY.top + '"/><stop offset="1" stop-color="' + SKY.bottom + '"/></linearGradient>' + slatPattern(d.id, d.tilt) + '</defs>' +
-      // pendant lamp above the window
-      '<line x1="30" y1="1" x2="30" y2="6" stroke="#8a8a8e" stroke-width="1"/><path class="lamp" d="M24 10 L36 10 L33 6 L27 6 Z" fill="' + (d.light ? '#ffd166' : '#8a8a8e') + '"/>' +
-      (d.light ? '<ellipse cx="30" cy="10.5" rx="6" ry="1.5" fill="#fff4c2" fill-opacity="0.9"/>' : '') +
+    return '<svg viewBox="0 0 60 70" width="56" height="66"><defs>' +
+      '<linearGradient id="sky-' + k + '" x1="0" y1="0" x2="0" y2="1"><stop class="s0" offset="0" stop-color="' + SKY.top + '"/><stop class="s1" offset="1" stop-color="' + SKY.bottom + '"/></linearGradient>' +
+      '<linearGradient id="cone-' + k + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcc66" stop-opacity="0.85"/><stop offset="0.6" stop-color="#ffb454" stop-opacity="0.35"/><stop offset="1" stop-color="#ffb454" stop-opacity="0"/></linearGradient>' + slatPattern(d.id, d.tilt) + '</defs>' +
+      // light cone from the pendant, over the window (visible only when lit)
+      '<polygon class="cone" points="25,14 35,14 60,70 0,70" fill="url(#cone-' + k + ')" style="display:' + (d.light ? 'block' : 'none') + '"/>' +
+      // pendant lamp: cord, shade, bulb
+      '<line x1="30" y1="0" x2="30" y2="6" stroke="#8a8a8e" stroke-width="1.2"/>' +
+      '<path class="shade" d="M21 14 L39 14 L34 6 L26 6 Z" fill="' + (d.light ? '#ffd166' : '#8a8a8e') + '"/>' +
+      '<ellipse class="bulb" cx="30" cy="14.5" rx="6" ry="2" fill="#fff4c2" style="display:' + (d.light ? 'block' : 'none') + '"/>' +
       // glass with sky, sun / moon
-      '<rect x="6" y="16" width="48" height="46" rx="3" fill="url(#sky-' + k + ')" stroke="var(--lg-frame)" stroke-width="1.5"/>' +
-      (SKY.sun ? '<circle cx="45" cy="26" r="4" fill="#ffd166" fill-opacity="0.9"/>' : '') +
-      (SKY.moon ? '<circle cx="45" cy="27" r="4" fill="#f5f0d8"/><circle cx="47.5" cy="25" r="3.5" fill="' + SKY.top + '"/><circle cx="14" cy="22" r="0.7" fill="#fff"/><circle cx="22" cy="40" r="0.6" fill="#fff"/>' : '') +
-      '<line x1="30" y1="17" x2="30" y2="61" stroke="#cfd6dd" stroke-width="1.5"/>' +
+      '<rect x="6" y="20" width="48" height="46" rx="3" fill="url(#sky-' + k + ')" stroke="var(--lg-frame)" stroke-width="1.5"/>' +
+      '<circle class="sun" cx="45" cy="30" r="4" fill="#ffd166" fill-opacity="0.9" style="display:' + (SKY.sun ? 'block' : 'none') + '"/>' +
+      '<g class="moon" style="display:' + (SKY.moon ? 'block' : 'none') + '"><circle cx="45" cy="31" r="4" fill="#f5f0d8"/><circle class="moonmask" cx="47.5" cy="29" r="3.5" fill="' + SKY.top + '"/><circle cx="14" cy="26" r="0.7" fill="#fff"/><circle cx="22" cy="44" r="0.6" fill="#fff"/></g>' +
+      '<line x1="30" y1="21" x2="30" y2="65" stroke="#cfd6dd" stroke-width="1.5"/>' +
       // curtain: bars over the sky (gaps show the sky when slats are open), bottom bar
-      '<g class="curtain" id="cu-' + k + '"><rect class="c" x="7.5" y="17" width="45" height="' + h + '" fill="url(#sl-' + k + ')"/><rect class="b" x="7.5" y="' + (17 + h - 2) + '" width="45" height="2.5" fill="#9a9a9e"/></g>' +
-      '<rect x="3" y="11" width="54" height="7" rx="2" fill="#b9b9bd"/></svg>';
+      '<g class="curtain" id="cu-' + k + '"><rect class="c" x="7.5" y="21" width="45" height="' + h + '" fill="url(#sl-' + k + ')"/><rect class="b" x="7.5" y="' + (21 + h - 2) + '" width="45" height="2.5" fill="#9a9a9e"/></g>' +
+      '<rect x="3" y="15" width="54" height="7" rx="2" fill="#b9b9bd"/></svg>';
   }
 
   /** While the motor reports movement, loop the curtain in the direction of travel until it reports stopped. */
   const DEFAULT_TRAVEL_MS = 60000;   // used until the shutter has learned its own up/down travel times
   const loops = new Map();   // id -> { raf, from, to, start }
-  function setCurtain(c, b, h) { c.setAttribute('height', h); b.setAttribute('y', 17 + h - 2); }
+  function setCurtain(c, b, h) { c.setAttribute('height', h); b.setAttribute('y', 21 + h - 2); }
   function stopLoop(id) { const l = loops.get(id); if (l) { cancelAnimationFrame(l.raf); loops.delete(id); } }
   function animate(d) {
     const g = document.getElementById('cu-' + domId(d.id)); if (!g) return;
@@ -109,16 +111,28 @@
     const filt = (res && res.shutters) || [];
     if (res && res.sky) SKY = res.sky;
     const el = document.getElementById('strip');
-    const key = filt.map((d) => d.id).join('|') + '|' + SKY.top + SKY.bottom + (SKY.sun ? 's' : '') + (SKY.moon ? 'm' : '') + '|' + filt.map((d) => d.light ? 1 : 0).join('');
+    const key = filt.map((d) => d.id).join('|');
     if (key !== lastKey) {   // (re)build cards only when the set changes; otherwise update in place so animations survive
       lastKey = key;
       el.innerHTML = filt.length ? '' : '<div class="empty">No shutters selected.</div>';
       for (const d of filt) {
-        el.innerHTML += '<div class="card' + (selected.has(d.id) ? ' sel' : '') + (d.light ? ' lit' : '') + '" id="card-' + domId(d.id) + '" onclick="toggleSel(\'' + d.id + '\')"><div class="glow"></div><div class="nm" title="' + d.name.replace(/"/g, '&quot;') + '">' + noSplit(shortName(d.name)).replace(/</g, '&lt;') + '</div>' + shutterSvg(d) + '<div class="v" id="v-' + domId(d.id) + '"></div></div>';
+        el.innerHTML += '<div class="card' + (selected.has(d.id) ? ' sel' : '') + (d.light ? ' lit' : '') + '" id="card-' + domId(d.id) + '" onclick="toggleSel(\'' + d.id + '\')"><div class="nm" title="' + d.name.replace(/"/g, '&quot;') + '">' + noSplit(shortName(d.name)).replace(/</g, '&lt;') + '</div>' + shutterSvg(d) + '<div class="v" id="v-' + domId(d.id) + '"></div></div>';
       }
     }
     anyMoving = false;
     for (const d of filt) {
+      // in-place updates: light, sky (no rebuild → running animations survive)
+      const card = document.getElementById('card-' + domId(d.id));
+      if (card) {
+        card.classList.toggle('lit', !!d.light);
+        const q = (sel) => card.querySelector(sel);
+        if (q('.cone')) q('.cone').style.display = d.light ? 'block' : 'none';
+        if (q('.bulb')) q('.bulb').style.display = d.light ? 'block' : 'none';
+        if (q('.shade')) q('.shade').setAttribute('fill', d.light ? '#ffd166' : '#8a8a8e');
+        if (q('.s0')) { q('.s0').setAttribute('stop-color', SKY.top); q('.s1').setAttribute('stop-color', SKY.bottom); }
+        if (q('.sun')) q('.sun').style.display = SKY.sun ? 'block' : 'none';
+        if (q('.moon')) { q('.moon').style.display = SKY.moon ? 'block' : 'none'; if (q('.moonmask')) q('.moonmask').setAttribute('fill', SKY.top); }
+      }
       const v = document.getElementById('v-' + domId(d.id));
       if (v) v.textContent = d.position + ' %' + (d.tilt != null ? ' · ' + d.tilt + '°' : '') + (d.moving ? (d.direction === 'up' ? ' ↑' : d.direction === 'down' ? ' ↓' : ' ↕') : '');
       const pat = document.getElementById('cu-' + domId(d.id)) && document.getElementById('sl-' + domId(d.id));
@@ -140,7 +154,7 @@
     });
   }
   // poll fast while something moves, slowly otherwise
-  function schedule() { setTimeout(() => { load(); schedule(); }, anyMoving ? 3000 : 10000); }
+  function schedule() { setTimeout(() => { load(); schedule(); }, anyMoving ? 3000 : 5000); }
   function toggleSel(id) {
     if (selected.has(id)) selected.delete(id); else selected.add(id);
     const c = document.getElementById('card-' + domId(id)); if (c) c.classList.toggle('sel', selected.has(id));

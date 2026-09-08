@@ -2,6 +2,34 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.10.4] — 2026-09-08
+
+### Fixed
+- Window glow reacts within a poll (≈5 s) of a lamp switching: the device snapshot behind the room-light lookup is
+  refreshed on every poll instead of once a minute. Card tint removed; only the pendant's cone shows the light.
+
+## [0.10.3] — 2026-09-08
+
+### Fixed
+- Shutters widget: light and sky changes are applied in place, so a running shutter animation no longer stops
+  and jumps when a lamp switches. Lamp state is read fresh on every poll (5 s idle) instead of from a cached snapshot.
+- The light cone now starts at the pendant (drawn inside the window graphic); larger pendant with a visible bulb.
+
+## [0.10.2] — 2026-09-08
+
+### Fixed
+- Sky drawn as night during the day: the sunrise/sunset calculation used a midnight-based Julian day (12-hour offset).
+
+## [0.10.1] — 2026-09-08
+
+### Changed
+- Window glow lamps are now configured **per room** (App settings → Devices → Rooms & lights): every Homey room
+  containing shutters lists its lamps, all ticked by default; untick or add lamps from other rooms. Replaces the
+  per-shutter editor.
+
+### Fixed
+- Glow drawn as a cone from the pendant downward over the window instead of a halo at the top.
+
 ## [0.10.0] — 2026-09-08
 
 ### Added

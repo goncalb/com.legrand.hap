@@ -14,11 +14,6 @@ class LegrandHapApp extends Homey.App {
     this.hlog = hlog;
 
     this._migrateSettings();
-    // heal: an IPv6 link-local address stored by an earlier build cannot be used — drop it
-    const storedEndpoints = this.homey.settings.get('endpoints') || {};
-    let healed = false;
-    for (const ep of Object.values(storedEndpoints)) if (ep.address && String(ep.address.address).includes(':')) { ep.address = null; healed = true; }
-    if (healed) this.homey.settings.set('endpoints', storedEndpoints);
 
     this.session = new HapSession({
       log: hlog,

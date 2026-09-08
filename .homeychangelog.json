@@ -1,4 +1,16 @@
 {
+  "0.10.4": {
+    "en": "Window glow updates within seconds of a lamp switching."
+  },
+  "0.10.3": {
+    "en": "Shutters widget: faster light updates, animation no longer interrupted, clearer pendant lamp."
+  },
+  "0.10.2": {
+    "en": "Fix: window sky showed night during the day."
+  },
+  "0.10.1": {
+    "en": "Room-based lamp selection for the window glow; glow drawn downward."
+  },
   "0.10.0": {
     "en": "Shutters widget: real sky (day/dusk/night), room-light glow, corrected slat drawing."
   },

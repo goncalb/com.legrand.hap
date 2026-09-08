@@ -138,15 +138,9 @@ module.exports = {
   async heatingOverride({ homey, body }) { await homey.app.heating.setOverride(body.profile, body.duration); return homey.app.heating.status(); },
   async heatingResume({ homey }) { await homey.app.heating.resume(); return homey.app.heating.status(); },
 
-  /* ----- shutter ↔ room lights (window glow in the Shutters widget) ----- */
-  async getShutterLights({ homey, query }) {
-    const roomLights = require('./lib/roomLights');
-    return { ...(await roomLights.editorData(homey, query.serial)), siblings: await roomLights.siblings(homey, query.serial) };
-  },
-  async saveShutterLights({ homey, body }) {
-    const roomLights = require('./lib/roomLights');
-    return roomLights.save(homey, body.serial, body.config || {}, body.applyTo || []);
-  },
+  /* ----- rooms & lights (window glow in the Shutters widget) ----- */
+  async getRoomLights({ homey }) { return require('./lib/roomLights').rooms(homey); },
+  async saveRoomLights({ homey, body }) { return require('./lib/roomLights').save(homey, body.zoneId, body); },
 
   /* ----- scenes ----- */
   async getScenes({ homey }) { return homey.app.scenes.list(); },

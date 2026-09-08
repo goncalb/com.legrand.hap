@@ -17,7 +17,7 @@
 
 ---
 
-**Version 0.10.0 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
+**Version 0.10.4 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
 
 ## What it does
 
