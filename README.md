@@ -99,10 +99,27 @@ slider snaps to them.
 
 Three widgets for Homey Dashboards, each configurable per instance (which devices or scenes).
 
-| Scenes | Shutters | Heating |
-|---|---|---|
-| ![Scenes widget (screenshot)](docs/images/widget-scenes.png) | ![Shutters widget (screenshot)](docs/images/widget-shutters.png) | ![Heating widget (screenshot)](docs/images/widget-heating.png) |
-| Tiles with the scene's emoji; tap to run. Show all scenes or pick up to six. | Live-drawn windows (real screenshot): the sky follows the time of day (dawn, day, golden hour, night), the curtain follows position, the slat gaps follow tilt (sky visible through open slats), a ceiling pendant lights up when a lamp in that room is on. Tap to select, then Open / Shade / Close. Animates while the motor runs at each shutter's learned travel speed. Tap to select, then **Open / Shade / Close** — with nothing selected the buttons act on all shown shutters. | Current profile and next switch, profile chips to override, a resume button, and one row per room with temperature → target, a flame while heating and manual/off tags. |
+#### Shutters
+
+<img src="docs/images/widget-shutters.png" width="420" alt="Shutters widget (screenshot)">
+
+Live-drawn windows: the sky follows the time of day (dawn, day, golden hour, night), the curtain follows
+position, the slat gaps follow tilt (sky visible through open slats), a ceiling pendant lights up when a
+lamp in that room is on. Animates while the motor runs at each shutter's learned travel speed. Tap to select,
+then **Open / Shade / Close** — with nothing selected the buttons act on all shown shutters.
+
+#### Heating
+
+<img src="docs/images/widget-heating.png" width="420" alt="Heating widget (screenshot)">
+
+Current profile and next switch, profile chips to override, a resume-schedule button, and one card per room
+with temperature → target, a flame while heating and manual/off tags.
+
+#### Scenes
+
+<img src="docs/images/widget-scenes.png" width="420" alt="Scenes widget (screenshot)">
+
+Tiles with the scene's emoji; tap to run. Show all scenes or pick up to six.
 
 #### How to read a window
 
