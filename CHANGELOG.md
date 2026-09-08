@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.10.0] — 2026-09-08
+
+### Added
+- Shutters widget: the window shows the real sky — a continuous blend through night, dawn, day and golden hour
+  computed from Homey's sunrise/sunset (permission `homey:manager:geolocation`), with sun or moon.
+- Shutters widget: a ceiling pendant above each window lights up (warm glow) when a lamp that lights that room is on.
+  Which lamps: App settings → Devices → shutter → **Lights** — auto (lights in the same Homey room), chosen lamps
+  (e.g. Hue bulbs rather than the wall switch), or none; "apply the same to" the other shutters of the room.
+
+### Fixed
+- Slat drawing inverted: on Legrand shutters 88° is shut and 0° fully open. Open slats now show the sky between them.
+- Selecting a shutter in the widget no longer shifts the layout.
+
 ## [0.9.14] — 2026-09-07
 
 ### Changed

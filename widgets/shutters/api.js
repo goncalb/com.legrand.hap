@@ -1,11 +1,22 @@
 'use strict';
 const widgetDevices = require('../../lib/widgetDevices');
+const { skyPalette } = require('../../lib/sun');
+const roomLights = require('../../lib/roomLights');
+
+function sky(homey) {
+  let lat = null, lon = null;
+  try { lat = homey.geolocation.getLatitude(); lon = homey.geolocation.getLongitude(); } catch { /* no permission: fixed times */ }
+  return skyPalette(new Date(), lat, lon);
+}
 
 module.exports = {
   async getShutters({ homey, query }) {
     const ids = query.ids ? String(query.ids).split(',').filter(Boolean) : [];
     const list = await widgetDevices(homey, 'shutter', ids);
-    return list.map((d) => ({
+    const lights = await Promise.all(list.map((d) => roomLights.lightOn(homey, d.getData().serial)));
+    const palette = sky(homey);
+    return { sky: palette, shutters: list.map((d, i) => ({
+      light: lights[i],
       id: d.getData().serial, name: d.getName(),
       position: Math.round((d.getCapabilityValue('windowcoverings_set') || 0) * 100),
       tilt: d.hasCapability('shutter_tilt') ? d.getCapabilityValue('shutter_tilt') : null,
@@ -13,7 +24,7 @@ module.exports = {
       direction: d._direction || null,
       travelUp: d.travelTime('up'), travelDown: d.travelTime('down'),   // learned seconds per full run (null = default)
       target: (() => { const a = d.acc(); const t = a && a.chars.TargetPosition; return t ? Math.round(t.value) : null; })(),
-    }));
+    })) };
   },
   async preset({ homey, body }) {
     let list = await widgetDevices(homey, 'shutter', body.ids || []);

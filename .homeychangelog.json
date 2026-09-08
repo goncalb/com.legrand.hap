@@ -1,4 +1,7 @@
 {
+  "0.10.0": {
+    "en": "Shutters widget: real sky (day/dusk/night), room-light glow, corrected slat drawing."
+  },
   "0.9.14": {
     "en": "Shutter travel times: manual override, reset action, smarter learning for orientable shutters."
   },

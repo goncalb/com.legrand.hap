@@ -17,7 +17,7 @@
 
 ---
 
-**Version 0.9.14 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
+**Version 0.10.0 (beta)** · GPL-3.0 · requires Homey Pro (2023 or later), firmware ≥ 12.4.0
 
 ## What it does
 
@@ -102,7 +102,7 @@ Three widgets for Homey Dashboards, each configurable per instance (which device
 | Scenes | Shutters | Heating |
 |---|---|---|
 | ![Scenes widget](docs/images/widget-scenes.png) | ![Shutters widget](docs/images/widget-shutters.png) | ![Heating widget](docs/images/widget-heating.png) |
-| Tiles with the scene's emoji; tap to run. Show all scenes or pick up to six. | Live-drawn shutters (curtain = position, slat gaps = tilt) that animate while the motor runs, at each shutter's own learned travel speed. Tap to select, then **Open / Shade / Close** — with nothing selected the buttons act on all shown shutters. | Current profile and next switch, profile chips to override, a resume button, and one row per room with temperature → target, a flame while heating and manual/off tags. |
+| Tiles with the scene's emoji; tap to run. Show all scenes or pick up to six. | Live-drawn windows: the sky follows the real time of day (dawn, day, golden hour, night), the curtain follows position, the slat gaps follow tilt (sky visible through open slats), a ceiling pendant glows when a lamp in that room is on. Animates while the motor runs at each shutter's learned travel speed. Tap to select, then **Open / Shade / Close** — with nothing selected the buttons act on all shown shutters. | Current profile and next switch, profile chips to override, a resume button, and one row per room with temperature → target, a flame while heating and manual/off tags. |
 
 ### Roadmap — widgets under consideration
 

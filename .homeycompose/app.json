@@ -1,6 +1,6 @@
 {
   "id": "com.legrand.hap",
-  "version": "0.9.14",
+  "version": "0.10.0",
   "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [
@@ -17,7 +17,8 @@
   ],
   "brandColor": "#DA5046",
   "permissions": [
-    "homey:manager:api"
+    "homey:manager:api",
+    "homey:manager:geolocation"
   ],
   "author": {
     "name": "Community developer"
@@ -98,6 +99,14 @@
     "heatingResume": {
       "method": "POST",
       "path": "/heating-resume"
+    },
+    "getShutterLights": {
+      "method": "GET",
+      "path": "/shutter-lights"
+    },
+    "saveShutterLights": {
+      "method": "POST",
+      "path": "/shutter-lights"
     }
   },
   "images": {
