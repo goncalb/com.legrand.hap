@@ -1,8 +1,14 @@
 'use strict';
 
+function calibDevice(homey, serial) {
+  const d = homey.drivers.getDriver('shutter').getDevices().find((x) => x.getData().serial === serial);
+  if (!d) throw new Error('Shutter not found');
+  return d;
+}
+
 module.exports = {
   async getLog({ homey, query }) { return homey.app.logger.get({ serial: query.device, limit: Number(query.limit) || 200 }); },
-  async clearLog({ homey }) { homey.app.logger.clear(); return true; },
+  async clearLog({ homey }) { homey.app.logger.clear(); homey.app.logger.add('info', null, '--- log cleared: new debug session ---'); return true; },
 
   async getDevices({ homey }) {
     const homeyBySerial = new Map();
@@ -79,7 +85,7 @@ module.exports = {
 
   /* ----- endpoints (gateways / standalone HAP devices) ----- */
   async listEndpoints({ homey }) {
-    return { endpoints: homey.app.session.listEndpoints(), discovered: homey.app.session.listDiscovered({ all: true }) };
+    return { endpoints: homey.app.session.listEndpoints(), discovered: homey.app.session.listDiscovered({ all: true }), lastPair: homey.app.session.lastPair || null };
   },
 
   // Import hap-controller pairing data: whole pairings.json ({ "<id>": {...}, ... }) or one inner object + id.
@@ -107,10 +113,27 @@ module.exports = {
       if (!m) throw new Error('Enter an IP, e.g. 192.168.1.80 or 192.168.1.80:5001');
       address = { address: m[1], port: m[2] ? Number(m[2]) : 5001 };
     }
-    await homey.app.session.pair(body.id, body.pin, address);
+    // SRP on slow gateways can exceed the settings request timeout: run in the background,
+    // the settings page polls the result via /endpoints (lastPair)
+    homey.app.session.pair(body.id, body.pin, address).catch((e) => {
+      homey.app.session.lastPair = { id: body.id, t: Date.now(), state: 'failed', error: (e && e.message) || String(e) };
+      homey.app.hlog('error', null, `pairing ${body.id} failed: ${(e && e.message) || e}`);
+    });
     return true;
   },
   async removeEndpoint({ homey, body }) { return homey.app.session.removeEndpoint(body.id); },
+  // what a paired bridge exposes, and which driver would pick each item up — before adding anything
+  async endpointAccessories({ homey, query }) {
+    const ep = homey.app.session.endpoints.get(String(query.id || '').toUpperCase());
+    if (!ep) throw new Error('Endpoint not found');
+    const driverOf = { light: 'Light', shutter: 'Shutter', thermostat: 'Thermostat', socket: 'Socket', sensor: 'Sensor', remote: 'Remote', bridge: null };
+    return [...ep.accessories.values()]
+      .filter((a) => !(a.aid === 1 && a.klass === 'unknown'))   // the bridge's own mandatory accessory
+      .map((a) => ({
+      serial: a.serial, name: a.name, model: a.model, manufacturer: a.manufacturer,
+      klass: a.klass, driver: driverOf[a.klass] || null,
+    })).sort((x, y) => String(x.name).localeCompare(String(y.name)));
+  },
 
   async setEndpointAddress({ homey, body }) {
     const m = String(body.address || '').trim().match(/^([0-9.]+|[a-zA-Z0-9.-]+?)(?::(\d+))?$/);
@@ -210,6 +233,63 @@ module.exports = {
 
   /* ----- rooms & lights (window glow in the Shutters widget) ----- */
   async getRoomLights({ homey }) { return require('./lib/roomLights').rooms(homey); },
+
+  // ---- Assisted shutter calibration (settings wizard) ----
+  async calibShutters({ homey }) {
+    return homey.drivers.getDriver('shutter').getDevices()
+      .map((d) => ({ serial: d.getData().serial, name: d.getName(), tilt: d.hasTilt() }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  },
+  async calibCommand({ homey, body }) {
+    const d = calibDevice(homey, body.serial);
+    await d.hap.setChar(d.serial, 'TargetPosition', Math.round(body.value));
+    return { t: Date.now() };
+  },
+  async calibState({ homey, query }) {
+    const d = calibDevice(homey, query.serial);
+    return { t: Date.now(), moving: !!d._moving, direction: d._direction || null, position: d.getCapabilityValue('windowcoverings_set') };
+  },
+  // ---- Awnings: which interior room lights the drawn window ----
+  async awningsList({ homey }) {
+    const H = require('./lib/homeyApi');
+    const { zones } = await H.snapshot(homey);
+    const rooms = Object.values(zones)
+      .filter((z) => z.parent && zones[z.parent] && zones[z.parent].parent && !zones[zones[z.parent].parent].parent)
+      .map((z) => ({ id: z.id, name: z.name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const awnings = homey.drivers.getDriver('shutter').getDevices()
+      .filter((d) => d.getSetting('look') === 'awning')
+      .map((d) => {
+        const c = d.getStoreValue('awn_config') || {};
+        return { serial: d.getData().serial, name: d.getName(),
+          n: c.n === 2 ? 2 : 1, z1: c.z1 || d.getStoreValue('interior_zone') || '', t1: c.t1 || 'window', z2: c.z2 || '', t2: c.t2 || 'window' };
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return { awnings, rooms };
+  },
+  async awningsSave({ homey, body }) {
+    const d = calibDevice(homey, body.serial);
+    const cfg = { n: body.n === 2 ? 2 : 1, z1: body.z1 || null, t1: body.t1 || 'window', z2: body.n === 2 || body.t1 === 'sliding' ? body.z2 || null : null, t2: body.t2 || 'window' };
+    await d.setStoreValue('awn_config', cfg).catch(d.error);
+    await d.setStoreValue('interior_zone', cfg.z1).catch(d.error);   // legacy key stays in sync
+    const tName = (t) => ({ window: 'Window', full: 'Full glass', french: 'French door', sliding: 'Sliding door', door: 'Door' }[t] || t);
+    const part = (zn, t) => (zn || '?') + ' (' + tName(t) + ')';
+    const summary = cfg.n === 2 ? part(body.z1Name, cfg.t1) + ' + ' + part(body.z2Name, cfg.t2) : part(body.z1Name, cfg.t1) + (cfg.z2 && body.z2Name ? ' / right pane: ' + body.z2Name : '');
+    await d.setSettings({ interior_room: body.z1Name ? summary : 'not set' }).catch(d.error);
+    d.log(`awning openings: ${summary}`);
+    return true;
+  },
+  async calibSave({ homey, body }) {
+    const d = calibDevice(homey, body.serial);
+    const up = Math.round(body.up * 10) / 10, down = Math.round(body.down * 10) / 10;
+    const holdUp = Math.max(0, Math.round(body.holdUp)), holdDown = Math.max(0, Math.round(body.holdDown));
+    await d.setSettings({ travel_up_manual: up, travel_down_manual: down, end_hold: `close ${holdDown} s · open ${holdUp} s` });
+    await d.setStoreValue('hold_up', holdUp).catch(d.error);
+    await d.setStoreValue('hold_down', holdDown).catch(d.error);
+    d.log(`assisted calibration saved: up ${up} s, down ${down} s, end hold close ${holdDown} s / open ${holdUp} s`);
+    homey.notifications.createNotification({ excerpt: `Assisted calibration of **${d.getName()}** saved: up ${up} s, down ${down} s, end hold ${holdDown} s (closed) / ${holdUp} s (open).` }).catch(d.error);
+    return true;
+  },
   async saveRoomLights({ homey, body }) { return require('./lib/roomLights').save(homey, body.zoneId, body); },
 
   /* ----- scene editor: lights on Homey (any app) with their current state ----- */

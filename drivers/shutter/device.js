@@ -57,7 +57,7 @@ class ShutterDevice extends HapDevice {
     const desired = ['shutter_status', 'windowcoverings_set'];
     if (hasTilt) desired.push('shutter_tilt');
     if (hasTilt && exposeStd) desired.push('windowcoverings_tilt_set');
-    desired.push('shutter_moving', 'button.identify', 'button.rebuild', 'button.reset_travel');
+    desired.push('shutter_moving', 'button.identify', 'button.rebuild', 'button.reset_travel', 'button.calibrate');
     await this.ensureCapabilities(desired);
 
     if (hasTilt) {
@@ -73,14 +73,22 @@ class ShutterDevice extends HapDevice {
     }
     await this.setSettings({ tilt: hasTilt ? 'Yes' : 'No' }).catch(() => {});
 
-    // Flow-only "Set state" card: up = open, down = close. Legrand modules have no stop, so idle is refused.
+    // "Set state" (device controls + Flow): up = open, down = close — but like the physical rocker,
+    // the direction it is already moving in stops it. The stop square uses the approximate stop too;
+    // it only works with a known travel time (calibrate or run fully once).
     this._listen('windowcoverings_state', async (state) => {
-      if (state === 'up') return this.hap.setChar(this.serial, 'TargetPosition', 100);
-      if (state === 'down') return this.hap.setChar(this.serial, 'TargetPosition', 0);
-      throw new Error('Legrand shutters cannot stop mid-way; set a position instead');
+      if (this._moving && (state === 'idle' || state === this._direction)) return this.stopApproximate();
+      if (state === 'up') return this.hap.setChar(this.serial, 'TargetPosition', this.rawOf(100));
+      if (state === 'down') return this.hap.setChar(this.serial, 'TargetPosition', this.rawOf(0));
+      if (state === 'idle') throw new Error('Not moving');
+      throw new Error(`Unknown state "${state}"`);
     });
     this._listen('windowcoverings_set', async (value) => {
-      await this.hap.setChar(this.serial, 'TargetPosition', Math.round(value * 100));
+      const rawTarget = this.rawOf(Math.round(value * 100));
+      // the slider's fully-open / fully-closed shortcuts behave like the rocker: pressing the
+      // direction it is already moving in stops it; any other position is a normal retarget
+      if (this._moving && ((rawTarget >= 100 && this._direction === 'up') || (rawTarget <= 0 && this._direction === 'down'))) return this.stopApproximate();
+      await this.hap.setChar(this.serial, 'TargetPosition', rawTarget);
     });
     this._listen('shutter_tilt', async (deg) => {
       await this.hap.setChar(this.serial, 'TargetHorizontalTiltAngle', this._quantiseDeg(deg));
@@ -93,6 +101,7 @@ class ShutterDevice extends HapDevice {
     this._listen('button.identify', async () => this.hap.identify(this.serial));
     this._listen('button.rebuild', async () => this.rebuild());
     this._listen('button.reset_travel', async () => this.resetTravel());
+    this._listen('button.calibrate', async () => this.calibrateTravel());
 
     if (acc.chars.CurrentPosition) await this._setPosition(acc.chars.CurrentPosition.value || 0);
     if (hasTilt && acc.chars.CurrentHorizontalTiltAngle) await this._setTilt(acc.chars.CurrentHorizontalTiltAngle.value || 0);
@@ -108,9 +117,15 @@ class ShutterDevice extends HapDevice {
     const deg = this.hasCapability('shutter_tilt') ? this.getCapabilityValue('shutter_tilt') : null;
     let text = pos == null ? '' : `${Math.round(pos)} %`;
     if (deg != null) text += ` · ${Math.round(deg)}°`;
-    if (this._moving) text += this._direction === 'up' ? ' ▲' : this._direction === 'down' ? ' ▼' : ' ▲▼';
+    const dirPhys = this._inverted() ? (this._direction === 'up' ? 'down' : this._direction === 'down' ? 'up' : this._direction) : this._direction;
+    if (this._moving) text += dirPhys === 'up' ? ' ▲' : dirPhys === 'down' ? ' ▼' : ' ▲▼';
     await this.setCapabilityValue('shutter_status', text.trim()).catch(this.error);
   }
+
+  /** Inverted awnings: the gateway's raw 100 means retracted. Everything Homey-facing uses physical %. */
+  _inverted() { return this.getSetting('look') === 'awning' && !!this.getSetting('awning_invert'); }
+  physOf(raw) { return this._inverted() ? 100 - raw : raw; }
+  rawOf(phys) { return this._inverted() ? 100 - phys : phys; }
 
   async _setPosition(pos) {
     pos = Math.round(pos);
@@ -118,7 +133,7 @@ class ShutterDevice extends HapDevice {
     // the motor busy afterwards re-opening the slats, which must not count as travel time).
     if (this._runStart && this._runStart.pos != null && pos !== this._runStart.pos) await this._learnTravel(pos);
     this._lastPos = pos;
-    await this.setCapabilityValue('windowcoverings_set', pos / 100).catch(this.error);
+    await this.setCapabilityValue('windowcoverings_set', this.physOf(pos) / 100).catch(this.error);
     await this._updateStatus();
   }
 
@@ -151,11 +166,15 @@ class ShutterDevice extends HapDevice {
     if (!run || run.pos == null || endPos == null || !run.dir) return;
     if (Number(this.getSetting(`travel_${run.dir}_manual`)) > 0) return;   // manual time set: don't learn
     const delta = Math.abs(endPos - run.pos);
-    const secs = (Date.now() - run.t) / 1000;
+    let secs = (Date.now() - run.t) / 1000;
     if (delta < 20 || secs < 2) return;                       // too short to be a reliable sample
-    // Orientable shutters run a slat phase at the fully closed end, and the gateway only reports the
-    // position once everything has stopped — so a run ending at 0 % cannot be timed. Skip it.
-    if (this.hasTilt() && endPos === 0) { this.log(`travel ${run.dir}: run ended fully closed on an orientable shutter — not used for learning`); return; }
+    // At the fully closed / fully open end the motor holds its "moving" status for a while after the
+    // real movement (measured by "Calibrate travel times"). Subtract it; without a measurement a
+    // run ending fully closed on an orientable shutter cannot be timed — skip it (old behaviour).
+    if (this._calibrating && (endPos === 0 || endPos === 100)) { this.log(`travel ${run.dir}: calibration endpoint run — not used for learning`); return; }
+    const hold = endPos === 0 ? this.getStoreValue('hold_down') : endPos === 100 ? this.getStoreValue('hold_up') : null;
+    if (hold != null) secs = Math.max(1, secs - hold);
+    else if (this.hasTilt() && endPos === 0) { this.log(`travel ${run.dir}: run ended fully closed on an orientable shutter — not used for learning`); return; }
     const full = Math.round((secs / delta) * 100 * 10) / 10;
     const key = `travel_${run.dir}`;
     const samples = (this.getStoreValue(key) || []).slice(-4); samples.push(full);
@@ -173,6 +192,85 @@ class ShutterDevice extends HapDevice {
     return samples.length ? Math.round(samples.reduce((a, b) => a + b, 0) / samples.length * 10) / 10 : null;
   }
 
+  /**
+   * Approximate stop. Legrand modules have no stop command over HAP, so — like pressing the moving
+   * direction again on the physical rocker — we aim the shutter at its estimated current position,
+   * computed from the run start and the travel time. Refused without a travel time (the estimate
+   * would be a blind guess).
+   */
+  async stopApproximate() {
+    if (!this._moving || !this._runStart || this._runStart.pos == null || !this._direction) throw new Error('Not moving');
+    const travel = this.travelTime(this._direction);
+    if (!travel) throw new Error(`No travel time for "${this._direction}" yet — run it fully once or set a manual time`);
+    const elapsed = (Date.now() - this._runStart.t) / 1000;
+    const delta = (elapsed / travel) * 100;
+    const raw = this._direction === 'up' ? this._runStart.pos + delta : this._runStart.pos - delta;
+    if (raw >= 99.5 || raw <= 0.5) { this.log('stop ignored: run essentially complete, motor holding at the end'); return null; }
+    const est = Math.round(Math.max(1, Math.min(99, raw)));   // never land on the full-run endpoints
+    this.log(`stop while moving ${this._direction}: ${elapsed.toFixed(1)} s from ${this._runStart.pos} % → aiming at ${est} %`);
+    await this.hap.setChar(this.serial, 'TargetPosition', est);
+    return est;
+  }
+
+  /**
+   * One-tap calibration: 90 → 10 → 90 % measures the true speeds (mid-range, no end effects; the
+   * normal learning code records them), then a full close and a full open measure the end hold —
+   * how long the motor keeps its "moving" status at 0 / 100 % after the real movement stopped.
+   */
+  async calibrateTravel() {
+    if (this._calibrating) throw new Error('Calibration already running');
+    this._calibrating = true;
+    this._runCalibration()
+      .catch(async (e) => {
+        this.error('calibration failed:', e);
+        await this.setWarning(`Calibration failed: ${e && e.message}`).catch(() => {});
+        this._notify(`Travel calibration of **${this.getName()}** failed: ${e && e.message}`);
+        setTimeout(() => this.unsetWarning().catch(() => {}), 30000);
+      })
+      .finally(() => { this._calibrating = false; });
+    return true;   // runs in the background; progress on the device tile and in the Log
+  }
+
+  _notify(excerpt) {
+    this.homey.notifications.createNotification({ excerpt }).catch(this.error);
+  }
+
+  async _runCalibration() {
+    this._notify(`Travel calibration of **${this.getName()}** started — the shutter will run 90 → 10 → 90 %, then fully close and fully open. A few minutes.`);
+    const step = async (label, pos) => {
+      await this.setWarning(`Calibrating: ${label}`).catch(() => {});
+      this.log(`calibration: ${label} (→ ${pos} %)`);
+      const t0 = Date.now();
+      await this.hap.setChar(this.serial, 'TargetPosition', pos);
+      // wait for the gateway to report movement (or accept "already there"), then for it to stop
+      await new Promise((resolve) => {
+        const s0 = Date.now();
+        const t = setInterval(() => { if (this._moving || Date.now() - s0 > 8000) { clearInterval(t); resolve(); } }, 200);
+      });
+      await this._waitUntilStopped(180000);
+      return (Date.now() - t0) / 1000;
+    };
+    await step('moving to the start position', 90);
+    const tDownMid = await step('measuring down speed (90 → 10 %)', 10);
+    const tUpMid = await step('measuring up speed (10 → 90 %)', 90);
+    const down = this.travelTime('down'), up = this.travelTime('up');
+    if (!down || !up) throw new Error('speed runs were not learned — see the app Log');
+    // the mid runs carry the same command + stop-detection latency as the full runs: measure it there
+    const latency = Math.max(0, ((tDownMid - down * 0.8) + (tUpMid - up * 0.8)) / 2);
+    this.log(`calibration: measured command/detection latency ${latency.toFixed(1)} s`);
+    const tClose = await step('measuring the hold at full close (→ 0 %)', 0);
+    const holdDown = Math.max(0, Math.round(tClose - down * 0.9 - latency));   // 90 % span
+    const tOpen = await step('measuring the hold at full open (→ 100 %)', 100);
+    const holdUp = Math.max(0, Math.round(tOpen - up - latency));              // full span
+    await this.setStoreValue('hold_down', holdDown).catch(this.error);
+    await this.setStoreValue('hold_up', holdUp).catch(this.error);
+    await this.setSettings({ end_hold: `close ${holdDown} s · open ${holdUp} s` }).catch(() => {});
+    this.log(`calibration done: up ${up} s, down ${down} s, end hold close ${holdDown} s / open ${holdUp} s`);
+    this._notify(`Travel calibration of **${this.getName()}** done: up ${up} s, down ${down} s, end hold ${holdDown} s (closed) / ${holdUp} s (open).`);
+    await this.setWarning(`Calibration done — up ${up} s, down ${down} s, end hold ${holdDown} s / ${holdUp} s`).catch(() => {});
+    setTimeout(() => this.unsetWarning().catch(() => {}), 20000);
+  }
+
   async resetTravel() {
     await this.unsetStoreValue('travel_up').catch(() => {});
     await this.unsetStoreValue('travel_down').catch(() => {});
@@ -182,6 +280,10 @@ class ShutterDevice extends HapDevice {
   }
 
   async onSettings({ changedKeys }) {
+    if (changedKeys.includes('awning_invert') || changedKeys.includes('look')) {
+      // re-report the position in the (possibly new) physical orientation right away
+      setTimeout(() => { if (this._lastPos != null) this._setPosition(this._lastPos).catch(this.error); }, 300);
+    }
     if (changedKeys.some((k) => k.startsWith('travel_'))) this.log('travel time settings changed');
   }
 

@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.legrand.hap",
-  "version": "0.11.3",
+  "version": "0.12.0",
   "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [
@@ -128,6 +128,34 @@
     "getSceneClimate": {
       "method": "GET",
       "path": "/scene-climate"
+    },
+    "calibShutters": {
+      "method": "GET",
+      "path": "/calib/shutters"
+    },
+    "calibCommand": {
+      "method": "POST",
+      "path": "/calib/command"
+    },
+    "calibState": {
+      "method": "GET",
+      "path": "/calib/state"
+    },
+    "calibSave": {
+      "method": "POST",
+      "path": "/calib/save"
+    },
+    "awningsList": {
+      "method": "GET",
+      "path": "/awnings"
+    },
+    "awningsSave": {
+      "method": "POST",
+      "path": "/awnings/save"
+    },
+    "endpointAccessories": {
+      "method": "GET",
+      "path": "/endpoint-accessories"
     }
   },
   "images": {
@@ -936,7 +964,7 @@
     },
     {
       "name": {
-        "en": "Shutter"
+        "en": "Shutter / Covering"
       },
       "class": "windowcoverings",
       "capabilities": [
@@ -946,7 +974,8 @@
         "shutter_moving",
         "button.identify",
         "button.rebuild",
-        "button.reset_travel"
+        "button.reset_travel",
+        "button.calibrate"
       ],
       "platforms": [
         "local"
@@ -975,6 +1004,79 @@
         }
       ],
       "settings": [
+        {
+          "type": "group",
+          "label": {
+            "en": "Appearance"
+          },
+          "children": [
+            {
+              "id": "look",
+              "type": "dropdown",
+              "label": {
+                "en": "Drawn as"
+              },
+              "value": "shutter",
+              "hint": {
+                "en": "How the Shutters widget draws this device. The position works the same (0–100 %) for every look."
+              },
+              "values": [
+                {
+                  "id": "shutter",
+                  "label": {
+                    "en": "Roller shutter"
+                  }
+                },
+                {
+                  "id": "shade",
+                  "label": {
+                    "en": "Roller shade (fabric)"
+                  }
+                },
+                {
+                  "id": "curtain_split",
+                  "label": {
+                    "en": "Curtain — split (two panels)"
+                  }
+                },
+                {
+                  "id": "curtain_single",
+                  "label": {
+                    "en": "Curtain — single panel"
+                  }
+                },
+                {
+                  "id": "awning",
+                  "label": {
+                    "en": "Awning (exterior, seen from outside)"
+                  }
+                }
+              ]
+            },
+            {
+              "id": "awning_invert",
+              "type": "checkbox",
+              "label": {
+                "en": "Awning: invert direction"
+              },
+              "value": false,
+              "hint": {
+                "en": "Tick if the drawing extends when the real awning retracts. Only used by the Awning look."
+              }
+            },
+            {
+              "id": "interior_room",
+              "type": "label",
+              "label": {
+                "en": "Awning: interior room"
+              },
+              "value": "not set",
+              "hint": {
+                "en": "The room behind the awning's window — its lights make the drawn window glow. Set it in App settings → Devices → Awnings."
+              }
+            }
+          ]
+        },
         {
           "type": "group",
           "label": {
@@ -1068,6 +1170,17 @@
               "hint": {
                 "en": "Seconds for a full 100 → 0 % travel. 0 = use the learned value above. Orientable shutters cannot be timed on a full close (the gateway reports the position only after the slats have re-opened), so set the time here if learning gives a value that is too high."
               }
+            },
+            {
+              "id": "end_hold",
+              "type": "label",
+              "label": {
+                "en": "End hold (motor keeps \"moving\" status)"
+              },
+              "hint": {
+                "en": "Measured by \"Calibrate travel times\". Time the motor holds at fully closed / fully open before reporting stopped; subtracted when learning from full runs."
+              },
+              "value": "not measured"
             }
           ]
         }
@@ -1113,6 +1226,15 @@
           "uiComponent": null,
           "title": {
             "en": "Direction"
+          }
+        },
+        "button.calibrate": {
+          "maintenanceAction": true,
+          "title": {
+            "en": "Calibrate travel times"
+          },
+          "desc": {
+            "en": "Runs the shutter 90 → 10 → 90 % to measure the true speeds, then a full close and a full open to measure how long the motor holds at the ends before reporting stopped (orientable shutters hold ~30 s without moving). Takes a few minutes. Note: Homey's confirmation appears immediately and only means the calibration was started — follow the progress on the device banner and the Timeline."
           }
         }
       },
@@ -1505,7 +1627,7 @@
             {
               "id": "room",
               "title": {
-                "en": "Room cards (lamps grouped by room)"
+                "en": "Room scenes (lamps drawn in the room)"
               }
             }
           ]
@@ -1550,7 +1672,7 @@
           "id": "moods",
           "type": "checkbox",
           "title": {
-            "en": "Show Homey mood buttons (room cards)"
+            "en": "Show Homey mood buttons (room scenes)"
           },
           "value": true
         }
@@ -1701,6 +1823,56 @@
       },
       "settings": [
         {
+          "id": "grouping",
+          "type": "dropdown",
+          "title": {
+            "en": "Blind layout"
+          },
+          "value": "grouped",
+          "values": [
+            {
+              "id": "individual",
+              "title": {
+                "en": "Individual blinds (flat list)"
+              }
+            },
+            {
+              "id": "grouped",
+              "title": {
+                "en": "Grouped by room (box around each room)"
+              }
+            }
+          ]
+        },
+        {
+          "id": "cols",
+          "type": "dropdown",
+          "title": {
+            "en": "Cards per row"
+          },
+          "value": "3",
+          "values": [
+            {
+              "id": "3",
+              "title": {
+                "en": "3 (compact)"
+              }
+            },
+            {
+              "id": "2",
+              "title": {
+                "en": "2 (larger drawings)"
+              }
+            },
+            {
+              "id": "1",
+              "title": {
+                "en": "1 (full width)"
+              }
+            }
+          ]
+        },
+        {
           "id": "shade",
           "type": "dropdown",
           "title": {
@@ -1743,7 +1915,7 @@
             "en": "Show the room light on the windows"
           },
           "hint": {
-            "en": "Pendant lamp above each window, lit when a lamp of that room is on (App settings → Devices → Rooms & lights)."
+            "en": "Lit when a lamp of that room is on (App settings → Devices → Rooms & lights). Individual layout: pendant above each window. Grouped layout: one lamp on the room box."
           },
           "value": true
         }
@@ -1763,7 +1935,7 @@
         "type": "app",
         "singular": false,
         "filter": {
-          "class": "windowcoverings"
+          "capabilities": "windowcoverings_set"
         }
       },
       "id": "shutters"

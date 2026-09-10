@@ -2,15 +2,30 @@
 <html><head><meta charset="utf-8"/>
 <style>
   /* dark theme (variant B): cards lighter than the panel, brand lifted for contrast */
-  :root { --lg-card: var(--homey-color-mono-000, #fff); --lg-border: var(--homey-color-mono-200, #e3e3e3); --lg-brand: #DA5046; --lg-text: var(--homey-text-color, #1c1c1e); --lg-muted: var(--homey-text-color-light, #8a8a8e); --lg-frame: #8a8a8e; --lg-sel: #fdf1ef; }
+  :root { --lg-card: var(--homey-color-mono-000, #fff); --lg-border: var(--homey-color-mono-200, #e3e3e3); --lg-brand: #DA5046; --lg-text: var(--homey-text-color, #1c1c1e); --lg-muted: var(--homey-text-color-light, #8a8a8e); --lg-frame: #8a8a8e; --lg-sel: #fdf1ef; --sh-slat: #b5b5ba; --sh-bar: #9a9a9e; --sh-rail: #b9b9bd; --sh-fab: #d9cbb8; --sh-fab2: #c0b09a; --sh-awn: #d9634f; --sh-awn2: #b84a37; --sh-wall: #e6e0d7; --sh-mull: #cfd6dd; --sh-din: #e8ebee; }
   @media (prefers-color-scheme: dark) {
-    :root { --lg-card: #3a3a3c; --lg-border: #48484a; --lg-brand: #f0716a; --lg-text: #f2f2f7; --lg-muted: #c7c7cc; --lg-frame: #c7c7cc; --lg-sel: #4a3230; }
+    :root { --lg-card: #3a3a3c; --lg-border: #48484a; --lg-brand: #f0716a; --lg-text: #f2f2f7; --lg-muted: #c7c7cc; --lg-frame: #7f858d; --lg-sel: #4a3230; --sh-slat: #68686e; --sh-bar: #4b4b50; --sh-rail: #58585d; --sh-fab: #8a7f6d; --sh-fab2: #6f665a; --sh-awn: #a34a3b; --sh-awn2: #7e392e; --sh-wall: #4e4a44; --sh-mull: #5d6670; --sh-din: #555d66; }
   }
   html, body { margin: 0; overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   body { font-family: var(--homey-font-family-default, -apple-system, sans-serif); color: var(--lg-text); }
   .strip { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px; }
+  .rg { position: relative; border: 2px solid var(--lg-border); border-radius: 12px; padding: 22px 8px 8px; margin-top: 8px; box-sizing: border-box; min-width: 0; }
+  .rg .cards .card { flex: 0 0 calc((100% - (var(--cols) - 1) * 8px) / var(--cols)); max-width: calc((100% - (var(--cols) - 1) * 8px) / var(--cols)); border-color: transparent; }
+  .rg .cards .card.sel { border-color: var(--lg-brand); }
+  .rg .rh { position: absolute; top: 5px; left: 12px; max-width: calc(100% - 40px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; font-size: 11px; font-weight: 600; color: var(--lg-muted); cursor: pointer; }
+  .rg .rh.sel { color: var(--lg-brand); }
+  .rg.sel { border-color: var(--lg-brand); }
+  .rg .rlamp { position: absolute; top: 3px; right: 8px; line-height: 0; }
+  .rg .cards { display: flex; flex-wrap: wrap; gap: 8px; }
+  @keyframes wxfall { from { transform: translateY(0); } to { transform: translateY(36px); } }
+  .wx-fall { animation: wxfall 1.2s linear infinite; }
+  .wx-slow { animation-duration: 3.4s; }
   .card.sel { border-color: var(--lg-brand); background: var(--lg-sel); }
-  .card { cursor: pointer; user-select: none; flex: 0 0 calc((100% - 16px) / 3); max-width: calc((100% - 16px) / 3); box-sizing: border-box; border: 2px solid var(--lg-border); border-radius: 10px; padding: 6px 4px; text-align: center; background: var(--lg-card); position: relative; overflow: hidden; }
+  .card { cursor: pointer; user-select: none; flex: 0 0 calc((100% - (var(--icols, 3) - 1) * 8px) / var(--icols, 3)); max-width: calc((100% - (var(--icols, 3) - 1) * 8px) / var(--icols, 3)); box-sizing: border-box; border: 2px solid var(--lg-border); border-radius: 10px; padding: 6px 4px; text-align: center; background: var(--lg-card); position: relative; overflow: hidden; }
+  .card.wide { display: grid; grid-template-columns: 1fr 2fr; grid-template-areas: "nm art" "v art"; align-items: center; padding: 8px 14px; column-gap: 10px; }
+  .card.wide .nm { grid-area: nm; text-align: left; min-height: 0; align-self: end; }
+  .card.wide .v { grid-area: v; text-align: left; align-self: start; }
+  .card.wide svg { grid-area: art; justify-self: center; }
   .card .nm { font-size: 11px; font-weight: 600; color: var(--lg-brand); line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; min-height: 26px; white-space: normal; overflow-wrap: normal; word-break: keep-all; }
   .card .v { font-size: 11px; color: var(--lg-muted); }
   .card svg { display: block; margin: 4px auto 2px; }
@@ -29,6 +44,12 @@
   let HomeyRef, S = {}, ids = [];
   const domId = (id) => String(id).replace(/[^a-zA-Z0-9]/g, '_');
   // Cards are narrow: drop redundant words the widget already implies ("Shutter Window Kitchen" -> "Window Kitchen")
+  // when a card sits under its room header, the room name inside the shutter name is redundant
+  function stripRoom(name, rn) {
+    if (!rn) return name;
+    const out = String(name).replace(new RegExp(rn.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'), '').replace(/\s{2,}/g, ' ').trim();
+    return out || name;
+  }
   function shortName(name) {
     const cleaned = String(name).replace(/\b(roller\s+)?(shutters?|blinds?|rolling\s+shutter)\b/gi, '').replace(/\s{2,}/g, ' ').replace(/^[\s\-–·]+|[\s\-–·]+$/g, '').trim();
     return cleaned || name;   // never blank a name that was only "Shutter"
@@ -47,46 +68,209 @@
   }
 
   function curtainH(position) { return 44 * Math.max(0, Math.min(100, 100 - position)) / 100; }
+  function covH(d, position) {
+    // position is physical (the device inverts awnings at the boundary): awnings cover by extending
+    const cover = d.look === 'awning' ? position : (100 - position);
+    return 44 * Math.max(0, Math.min(100, cover)) / 100;
+  }
+  // geometry per look, used by both the svg builder and the animation updater
+  function geoShade(h) { return { h }; }
+  function geoSplit(h) { return { w: h / 44 * 22.5 }; }
+  function geoSingle(h) { return { w: h / 44 * 45 }; }
+  function geoAwn(h, f) {
+    const sf = Math.max(f || 1, 0.62);
+    const top = 20 + 3.6 * sf - 0.5;        // cassette bottom: the fabric hangs from here, no wall sliver
+    const ext = h / 44 * 22, sp = h / 44 * 5, by = top + ext;
+    return { ext, by, top, sf, bx1: 9 - sp, bx2: 51 + sp };
+  }
+  function awnPaths(g) {
+    const sf = g.sf, bh = 3 * sf;
+    const yv = g.by + bh - 1.2;             // skirt overlaps into the bar: no seam
+    let val = 'M ' + g.bx1 + ' ' + yv + ' ';
+    const w8 = (g.bx2 - g.bx1) / 8;
+    for (let i = 0; i < 8; i++) val += 'q ' + (w8 / 2) + ' ' + (3.4 * sf) + ' ' + w8 + ' 0 ';
+    val += 'Z';
+    return { fab: 'M 9 ' + g.top + ' L 51 ' + g.top + ' L ' + g.bx2 + ' ' + g.by + ' L ' + g.bx1 + ' ' + g.by + ' Z', val, bh, sf };
+  }
   let SKY = { top: '#8fc3ff', bottom: '#dff0ff', sun: true, moon: false };
   // Legrand slats: 88° = shut (solid curtain), 0° = fully open (sky visible between the slats)
+  function foldPattern(id) {
+    return '<pattern id="cf-' + domId(id) + '" width="9" height="10" patternUnits="userSpaceOnUse"><rect width="9" height="10" fill="var(--sh-fab)"/><rect x="6.5" width="1.6" height="10" fill="var(--sh-fab2)"/></pattern>';
+  }
+  function awnPattern(id) {
+    return '<pattern id="aw-' + domId(id) + '" width="10" height="8" patternUnits="userSpaceOnUse"><rect width="10" height="8" fill="var(--sh-awn)"/><rect x="6" width="4" height="8" fill="#f0ece4"/></pattern>';
+  }
   function slatPattern(id, tilt) {
     const open = tilt == null ? 0 : Math.max(0, Math.min(1, (88 - tilt) / 88));
     const period = 7.5, gap = 3 * open, bar = period - gap;
-    return '<pattern id="sl-' + domId(id) + '" width="10" height="' + period + '" patternUnits="userSpaceOnUse"><rect width="10" height="' + bar.toFixed(2) + '" fill="#b5b5ba"/></pattern>';
+    return '<pattern id="sl-' + domId(id) + '" width="10" height="' + period + '" patternUnits="userSpaceOnUse"><rect width="10" height="' + bar.toFixed(2) + '" fill="var(--sh-slat)"/></pattern>';
+  }
+  function weatherLayer(k) {
+    const w = SKY.weather;
+    if (!w || w === 'clear') return '';
+    let inner = '<ellipse cx="17" cy="27" rx="8" ry="3.4" fill="#ffffff" opacity="0.85"/><ellipse cx="25" cy="25.5" rx="6" ry="2.9" fill="#f4f7fa" opacity="0.85"/><ellipse cx="41" cy="24.5" rx="7" ry="3.1" fill="#eef2f6" opacity="0.8"/>';
+    if (w === 'rain') for (let i = 0; i < 5; i++) inner += '<line class="wx-fall" style="animation-delay:-' + (i * 0.23).toFixed(2) + 's" x1="' + (12 + i * 9) + '" y1="30" x2="' + (11 + i * 9) + '" y2="34" stroke="#7fb2e8" stroke-width="1.1" stroke-linecap="round"/>';
+    if (w === 'snow') for (let i = 0; i < 6; i++) inner += '<circle class="wx-fall wx-slow" style="animation-delay:-' + (i * 0.55).toFixed(2) + 's" cx="' + (10 + i * 8) + '" cy="30" r="1.1" fill="#fff"/>';
+    return '<g clip-path="url(#wc-' + k + ')"><rect x="6" y="20" width="48" height="46" fill="#5b6672" opacity="' + (w === 'cloud' ? '0.15' : '0.25') + '"/>' + inner + '</g>';
+  }
+  const skyClear = () => !SKY.weather || SKY.weather === 'clear';
+  function coverSvg(d, k, h) {
+    // the moving part of each look; ids/classes are what setCover() updates
+    if (d.look === 'shade') {
+      return '<g class="curtain" id="cu-' + k + '"><rect class="c" x="7.5" y="21" width="45" height="' + h + '" fill="var(--sh-fab)"/>' +
+        '<g class="hb" transform="translate(0 ' + h + ')"><path d="M 7.5 21 q 11 4 22.5 0 q 11.5 4 22.5 0" fill="none" stroke="var(--sh-fab2)" stroke-width="1.6"/><circle cx="30" cy="24.5" r="1.7" fill="none" stroke="var(--sh-fab2)" stroke-width="1.4"/></g></g>';
+    }
+    if (d.look === 'curtain_split') {
+      const g = geoSplit(h);
+      return '<g class="curtain" id="cu-' + k + '"><rect class="cl" x="7.5" y="21" width="' + g.w + '" height="44" fill="url(#cf-' + k + ')"/>' +
+        '<rect class="cr" x="' + (52.5 - g.w) + '" y="21" width="' + g.w + '" height="44" fill="url(#cf-' + k + ')"/></g>';
+    }
+    if (d.look === 'curtain_single') {
+      const g = geoSingle(h);
+      return '<g class="curtain" id="cu-' + k + '"><rect class="c" x="7.5" y="21" width="' + g.w + '" height="44" fill="url(#cf-' + k + ')"/></g>';
+    }
+    // default: roller shutter with slats
+    return '<g class="curtain" id="cu-' + k + '"><rect class="c" x="7.5" y="21" width="45" height="' + h + '" fill="url(#sl-' + k + ')"/><rect class="b" x="7.5" y="' + (21 + h - 2) + '" width="45" height="2.5" fill="var(--sh-bar)"/></g>';
+  }
+  // openings layout inside the 60-unit facade: usable span x8..52
+  function opLayout(aw) {
+    const n = aw && aw.n === 2 ? 2 : 1;
+    const t1 = (aw && aw.t1) || 'window', t2 = (aw && aw.t2) || 'window';
+    if (n === 1) return [{ x: t1 === 'sliding' ? 9 : 12, w: t1 === 'sliding' ? 42 : 36, t: t1, li: 'l1' }];
+    const wide1 = t1 === 'sliding', wide2 = t2 === 'sliding';
+    let w1 = 20, w2 = 20;
+    if (wide1 && !wide2) { w1 = 26; w2 = 14; }
+    if (wide2 && !wide1) { w1 = 14; w2 = 26; }
+    return [{ x: 8, w: w1, t: t1, li: 'l1' }, { x: 8 + w1 + 4, w: w2, t: t2, li: 'l2' }];
+  }
+  function interiorGrad(k, idx, lit, night) {
+    const c0 = lit ? '#f7e4b8' : night ? '#232a33' : '#c5cad1';
+    const c1 = lit ? '#e8c98a' : night ? '#161c24' : '#aab1b9';
+    return '<linearGradient id="in-' + k + '-' + idx + '" x1="0" y1="0" x2="0" y2="1"><stop class="i0-' + idx + '" offset="0" stop-color="' + c0 + '"/><stop class="i1-' + idx + '" offset="1" stop-color="' + c1 + '"/></linearGradient>';
+  }
+  // one opening drawn into the wall; exterior hardware only where you can walk through from outside
+  function openingSvg(o, k, idx, lit, f) {
+    const fill = 'url(#in-' + k + '-' + idx + ')', fr = 'var(--lg-frame)';
+    const x = o.x, w = o.w;
+    if (o.t === 'window') {
+      return '<rect x="' + x + '" y="32" width="' + w + '" height="26" rx="2" fill="' + fill + '" stroke="' + fr + '" stroke-width="' + (1.5 * f) + '"/>' +
+        '<line x1="' + (x + w / 2) + '" y1="33" x2="' + (x + w / 2) + '" y2="57" stroke="var(--sh-din)" stroke-width="' + (1.2 * f) + '" opacity="0.7"/>' +
+        '<rect x="' + (x - 1.5) + '" y="58" width="' + (w + 3) + '" height="2" rx="1" fill="' + fr + '"/>';
+    }
+    if (o.t === 'full') {
+      return '<rect x="' + x + '" y="28" width="' + w + '" height="36" rx="1.5" fill="' + fill + '" stroke="' + fr + '" stroke-width="' + (1.4 * f) + '"/>' +
+        '<line x1="' + (x + w / 2) + '" y1="29" x2="' + (x + w / 2) + '" y2="63" stroke="var(--sh-din)" stroke-width="' + (1.2 * f) + '" opacity="0.7"/>';
+    }
+    if (o.t === 'french') {
+      const lw = w / 2;
+      let out = '';
+      for (let i = 0; i < 2; i++) {
+        const dx = x + i * lw;
+        out += '<rect x="' + (dx + 1) + '" y="29.5" width="' + (lw - 2) + '" height="33" fill="' + fill + '" stroke="' + fr + '" stroke-width="' + (1.1 * f) + '"/>' +
+          '<line x1="' + (dx + 1) + '" y1="45" x2="' + (dx + lw - 1) + '" y2="45" stroke="var(--sh-din)" stroke-width="' + (0.9 * f) + '" opacity="0.8"/>';
+      }
+      return out + '<rect x="' + x + '" y="28" width="' + w + '" height="36" fill="none" stroke="' + fr + '" stroke-width="' + (1.5 * f) + '"/>' +
+        '<circle cx="' + (x + w / 2 - 1.6) + '" cy="46" r="' + (0.9 * f) + '" fill="' + fr + '"/><circle cx="' + (x + w / 2 + 1.6) + '" cy="46" r="' + (0.9 * f) + '" fill="' + fr + '"/>';
+    }
+    if (o.t === 'sliding') {
+      const pw = w * 0.55, fill2 = 'url(#in-' + k + '-' + (idx === 1 && o.li2 ? 2 : idx) + ')';
+      return '<rect x="' + x + '" y="28.5" width="' + pw + '" height="35" fill="' + fill + '" stroke="' + fr + '" stroke-width="' + (1.2 * f) + '"/>' +
+        '<rect x="' + (x + w - pw) + '" y="28.5" width="' + pw + '" height="35" fill="' + fill2 + '" stroke="' + fr + '" stroke-width="' + (1.5 * f) + '"/>' +
+        '<rect x="' + (x + w - pw + 0.6) + '" y="41" width="' + (1.5 * f) + '" height="9" rx="' + (0.7 * f) + '" fill="' + fr + '"/>' +
+        '<rect x="' + (x - 1) + '" y="63" width="' + (w + 2) + '" height="1.8" rx="0.9" fill="' + fr + '"/>';
+    }
+    // door (push): glass upper, solid lower, exterior handle
+    return '<rect x="' + (x + 1) + '" y="28.5" width="' + (w - 2) + '" height="35" fill="#cbb894" stroke="' + fr + '" stroke-width="' + (1.5 * f) + '"/>' +
+      '<rect x="' + (x + 3) + '" y="31" width="' + (w - 6) + '" height="14" fill="' + fill + '" stroke="' + fr + '" stroke-width="' + (1 * f) + '"/>' +
+      '<rect x="' + (x + 3) + '" y="49" width="' + (w - 6) + '" height="11" rx="1" fill="#bda884"/>' +
+      '<circle cx="' + (x + w - 3.5) + '" cy="47" r="' + (1.1 * f) + '" fill="' + fr + '"/>';
+  }
+  function awningSvg(d, k, h, sizes, f) {
+    const g = geoAwn(h, f), pa = awnPaths(g), night = !!SKY.moon;
+    const aw = d.aw || { n: 1 };
+    const ops = opLayout(aw);
+    if (ops.length === 1 && ops[0].t === 'sliding' && aw.l2 != null) ops[0].li2 = true;
+    let wx = '';
+    if (SKY.weather === 'rain') for (let i = 0; i < 4; i++) wx += '<line class="wx-fall" style="animation-delay:-' + (i * 0.3).toFixed(2) + 's" x1="' + (12 + i * 12) + '" y1="18" x2="' + (11 + i * 12) + '" y2="22" stroke="#7fb2e8" stroke-width="' + (1.1 * f) + '" stroke-linecap="round"/>';
+    if (SKY.weather === 'snow') for (let i = 0; i < 5; i++) wx += '<circle class="wx-fall wx-slow" style="animation-delay:-' + (i * 0.6).toFixed(2) + 's" cx="' + (10 + i * 10) + '" cy="18" r="1.1" fill="#fff"/>';
+    const grads = interiorGrad(k, 1, !!d.light, night) + interiorGrad(k, 2, !!(d.aw && d.aw.l2), night);
+    const glyph = ops.length === 1 && ops[0].t !== 'sliding' && ops[0].w >= 30
+      ? '<g class="il" clip-path="url(#win-' + k + ')" style="display:' + (d.light ? 'block' : 'none') + '"><circle cx="21" cy="41" r="5" fill="#fff3cd" opacity="0.8"/><path d="M 18 42 A 3.4 3.4 0 0 1 24.8 42 Z" fill="#e8b04b"/><rect x="34" y="49" width="11" height="9" rx="1.5" fill="#caa06a" opacity="0.7"/></g>' : '';
+    return sizes + '<defs>' + grads + awnPattern(d.id) +
+      '<clipPath id="win-' + k + '"><rect x="8" y="28" width="44" height="36"/></clipPath><clipPath id="awc-' + k + '"><rect x="3" y="14" width="54" height="55"/></clipPath></defs>' +
+      '<rect x="3" y="15" width="54" height="54" rx="4" fill="var(--sh-wall)"/>' +
+      ops.map((o, i) => openingSvg(o, k, i + 1, i === 0 ? d.light : (d.aw && d.aw.l2), f)).join('') +
+      glyph +
+      '<g class="curtain" id="cu-' + k + '" data-awn="1" data-f="' + f + '" style="display:' + (g.ext > 0.8 ? 'block' : 'none') + '">' +
+      '<rect class="sh" x="8" y="28" width="44" height="' + Math.min(26, g.ext * 0.8) + '" fill="#3a4550" opacity="0.16" clip-path="url(#win-' + k + ')"/>' +
+      '<path class="c" d="' + pa.fab + '" fill="url(#aw-' + k + ')"/>' +
+      '<line class="a1" x1="9" y1="' + g.top + '" x2="' + g.bx1 + '" y2="' + g.by + '" stroke="var(--sh-awn2)" stroke-width="' + (1.6 * f) + '"/>' +
+      '<line class="a2" x1="51" y1="' + g.top + '" x2="' + g.bx2 + '" y2="' + g.by + '" stroke="var(--sh-awn2)" stroke-width="' + (1.6 * f) + '"/>' +
+      '<rect class="b" x="' + (g.bx1 - 1) + '" y="' + (g.by - 0.8) + '" width="' + (g.bx2 - g.bx1 + 2) + '" height="' + pa.bh + '" rx="' + (1.2 * pa.sf) + '" fill="var(--sh-awn2)"/>' +
+      '<path class="v" d="' + pa.val + '" fill="var(--sh-awn)"/></g>' +
+      '<rect x="7" y="20" width="46" height="' + (3.6 * pa.sf) + '" rx="' + (1.6 * pa.sf) + '" fill="var(--sh-awn2)"/>' +
+      (wx ? '<g clip-path="url(#awc-' + k + ')">' + wx + '</g>' : '') +
+      '<rect x="3" y="15" width="54" height="4" rx="2" fill="var(--sh-rail)"/></svg>';
   }
   function shutterSvg(d) {
-    const h = curtainH(d.position), k = domId(d.id);
-    return '<svg viewBox="0 0 60 70" width="56" height="66"><defs>' +
+    const h = covH(d, d.position), k = domId(d.id);
+    // grouped layout: the room box carries the lamp, so the drawing drops it and the window grows into the space
+    const noLamp = S.grouping !== 'individual' || S.lamp === false || d.look === 'awning';
+    const cols = Math.max(1, Math.min(3, Number(S.cols) || 3));
+    const gw = cols === 1 ? 210 : cols === 2 ? 110 : 82;
+    const lw = cols === 1 ? 104 : cols === 2 ? 76 : 56;
+    const sizes = (noLamp
+      ? '<svg viewBox="0 13 60 57" width="' + gw + '" height="' + Math.round(gw * 57 / 60) + '">'
+      : '<svg viewBox="0 0 60 70" width="' + lw + '" height="' + Math.round(lw * 70 / 60) + '">');
+    const sf = noLamp ? 82 / gw : 56 / lw;
+    if (d.look === 'awning') return awningSvg(d, k, h, sizes, sf);
+    return sizes + '<defs>' +
       '<linearGradient id="sky-' + k + '" x1="0" y1="0" x2="0" y2="1"><stop class="s0" offset="0" stop-color="' + SKY.top + '"/><stop class="s1" offset="1" stop-color="' + SKY.bottom + '"/></linearGradient>' +
-      '<linearGradient id="cone-' + k + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcc66" stop-opacity="0.85"/><stop offset="0.6" stop-color="#ffb454" stop-opacity="0.35"/><stop offset="1" stop-color="#ffb454" stop-opacity="0"/></linearGradient>' + slatPattern(d.id, d.tilt) + '</defs>' +
-      // pendant lamp + light cone (optional per widget)
-      (S.lamp === false ? '' :
+      '<linearGradient id="cone-' + k + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffcc66" stop-opacity="0.85"/><stop offset="0.6" stop-color="#ffb454" stop-opacity="0.35"/><stop offset="1" stop-color="#ffb454" stop-opacity="0"/></linearGradient>' + (d.look === 'shutter' || !d.look ? slatPattern(d.id, d.tilt) : foldPattern(d.id)) + '<clipPath id="wc-' + k + '"><rect x="6" y="20" width="48" height="46" rx="3"/></clipPath></defs>' +
+      // pendant lamp + light cone (individual layout only)
+      (noLamp ? '' :
         '<polygon class="cone" points="25,14 35,14 60,70 0,70" fill="url(#cone-' + k + ')" style="display:' + (d.light ? 'block' : 'none') + '"/>' +
         '<line x1="30" y1="0" x2="30" y2="6" stroke="#8a8a8e" stroke-width="1.2"/>' +
         '<path class="shade" d="M21 14 L39 14 L34 6 L26 6 Z" fill="' + (d.light ? '#ffd166' : '#8a8a8e') + '"/>' +
         '<ellipse class="bulb" cx="30" cy="14.5" rx="6" ry="2" fill="#fff4c2" style="display:' + (d.light ? 'block' : 'none') + '"/>') +
       // glass with sky, sun / moon
       '<rect x="6" y="20" width="48" height="46" rx="3" fill="url(#sky-' + k + ')" stroke="var(--lg-frame)" stroke-width="1.5"/>' +
-      '<circle class="sun" cx="45" cy="30" r="4" fill="#ffd166" fill-opacity="0.9" style="display:' + (SKY.sun ? 'block' : 'none') + '"/>' +
+      '<circle class="sun" cx="45" cy="30" r="4" fill="#ffd166" fill-opacity="0.9" style="display:' + (SKY.sun && skyClear() ? 'block' : 'none') + '"/>' +
       '<g class="moon" style="display:' + (SKY.moon ? 'block' : 'none') + '"><circle cx="45" cy="31" r="4" fill="#f5f0d8"/><circle class="moonmask" cx="47.5" cy="29" r="3.5" fill="' + SKY.top + '"/><circle cx="14" cy="26" r="0.7" fill="#fff"/><circle cx="22" cy="44" r="0.6" fill="#fff"/></g>' +
-      '<line x1="30" y1="21" x2="30" y2="65" stroke="#cfd6dd" stroke-width="1.5"/>' +
-      // curtain: bars over the sky (gaps show the sky when slats are open), bottom bar
-      '<g class="curtain" id="cu-' + k + '"><rect class="c" x="7.5" y="21" width="45" height="' + h + '" fill="url(#sl-' + k + ')"/><rect class="b" x="7.5" y="' + (21 + h - 2) + '" width="45" height="2.5" fill="#9a9a9e"/></g>' +
-      '<rect x="3" y="15" width="54" height="7" rx="2" fill="#b9b9bd"/></svg>';
+      weatherLayer(k) +
+      '<line x1="30" y1="21" x2="30" y2="65" stroke="var(--sh-mull)" stroke-width="1.5"/>' +
+      coverSvg(d, k, h) +
+      '<rect x="3" y="15" width="54" height="7" rx="2" fill="var(--sh-rail)"/></svg>';
   }
 
   /** While the motor reports movement, loop the curtain in the direction of travel until it reports stopped. */
   const DEFAULT_TRAVEL_MS = 60000;   // used until the shutter has learned its own up/down travel times
   const loops = new Map();   // id -> { raf, from, to, start }
-  function setCurtain(c, b, h) { c.setAttribute('height', h); b.setAttribute('y', 21 + h - 2); }
+  function setCover(g, d, h) {
+    const q = (sel) => g.querySelector(sel);
+    if (d.look === 'shade') { q('.c').setAttribute('height', h); q('.hb').setAttribute('transform', 'translate(0 ' + h + ')'); return; }
+    if (d.look === 'curtain_split') { const ge = geoSplit(h); q('.cl').setAttribute('width', ge.w); q('.cr').setAttribute('width', ge.w); q('.cr').setAttribute('x', 52.5 - ge.w); return; }
+    if (d.look === 'curtain_single') { q('.c').setAttribute('width', geoSingle(h).w); return; }
+    if (d.look === 'awning') {
+      const gf = parseFloat(g.dataset.f) || 1;
+      const ge = geoAwn(h, gf), pa = awnPaths(ge);
+      g.style.display = ge.ext > 0.8 ? 'block' : 'none';
+      q('.c').setAttribute('d', pa.fab); q('.v').setAttribute('d', pa.val);
+      q('.a1').setAttribute('x2', ge.bx1); q('.a1').setAttribute('y2', ge.by);
+      q('.a2').setAttribute('x2', ge.bx2); q('.a2').setAttribute('y2', ge.by);
+      const b = q('.b'); b.setAttribute('x', ge.bx1 - 1); b.setAttribute('y', ge.by - 0.8); b.setAttribute('width', ge.bx2 - ge.bx1 + 2);
+      q('.sh').setAttribute('height', Math.min(24, ge.ext * 0.8)); return;
+    }
+    const c = q('.c'), b = q('.b');
+    c.setAttribute('height', h); b.setAttribute('y', 21 + h - 2);
+  }
   function stopLoop(id) { const l = loops.get(id); if (l) { cancelAnimationFrame(l.raf); loops.delete(id); } }
   function animate(d) {
     const g = document.getElementById('cu-' + domId(d.id)); if (!g) return;
-    const c = g.querySelector('.c'), b = g.querySelector('.b');
-    if (!d.moving) { stopLoop(d.id); setCurtain(c, b, curtainH(d.position)); return; }
+    if (!d.moving) { stopLoop(d.id); setCover(g, d, covH(d, d.position)); return; }
     const dir = d.direction || (d.target != null && d.target < d.position ? 'down' : 'up');
-    const from = curtainH(d.position);                                          // from where the gateway last reported
-    const to = d.target != null ? curtainH(d.target) : (dir === 'down' ? 44 : 0); // to the target (or fully closed/open)
+    const from = covH(d, d.position);                                              // from where the gateway last reported
+    const to = d.target != null ? covH(d, d.target) : covH(d, dir === 'down' ? 0 : 100); // to the target (or the run's end)
     if (loops.has(d.id)) return;                                                // already animating this card
     // learned pace per direction (seconds per full run), falling back to the default
     const fullMs = ((dir === 'down' ? d.travelDown : d.travelUp) || DEFAULT_TRAVEL_MS / 1000) * 1000;
@@ -98,25 +282,51 @@
       // with a learned time: one precise pass, then hold at the target until the gateway reports stopped;
       // without: loop the pass so it visibly keeps moving until the real stop
       const t = learned ? Math.min(1, el / dur) : (el % dur) / dur;
-      setCurtain(c, b, state.from + (state.to - state.from) * t);
+      setCover(g, d, state.from + (state.to - state.from) * t);
       state.raf = requestAnimationFrame(step);
     };
     state.raf = requestAnimationFrame(step);
     loops.set(d.id, state);
   }
 
+  function roomLampSvg(on) {
+    return '<svg width="22" height="18" viewBox="0 0 22 18">' +
+      '<line x1="11" y1="0" x2="11" y2="6" stroke="var(--lg-muted)" stroke-width="1.4"/>' +
+      (on ? '<circle cx="11" cy="11" r="6.5" fill="#ffd166" opacity="0.4"/>' : '') +
+      '<path d="M 4 12 A 7 7 0 0 1 18 12 Z" fill="' + (on ? '#ffd166' : 'var(--lg-muted)') + '"/></svg>';
+  }
+  const grouped = () => S.grouping !== 'individual';
   let anyMoving = false, lastKey = '';
+  let roomIdsMap = new Map();
   const selected = new Set();
   function render(res) {
     const filt = (res && res.shutters) || [];
     if (res && res.sky) SKY = res.sky;
     const el = document.getElementById('strip');
-    const key = filt.map((d) => d.id).join('|');
+    const key = filt.map((d) => d.id + ':' + (d.look || 's') + ':' + (d.aw ? d.aw.n + (d.aw.t1 || '') + (d.aw.t2 || '') : '')).join('|') + '~' + (SKY.weather || 'clear');
     if (key !== lastKey) {   // (re)build cards only when the set changes; otherwise update in place so animations survive
       lastKey = key;
-      el.innerHTML = filt.length ? '' : '<div class="empty">No shutters selected.</div>';
-      for (const d of filt) {
-        el.innerHTML += '<div class="card' + (selected.has(d.id) ? ' sel' : '') + (d.light ? ' lit' : '') + '" id="card-' + domId(d.id) + '" onclick="toggleSel(\'' + d.id + '\')"><div class="nm" title="' + d.name.replace(/"/g, '&quot;') + '">' + noSplit(shortName(d.name)).replace(/</g, '&lt;') + '</div>' + shutterSvg(d) + '<div class="v" id="v-' + domId(d.id) + '"></div></div>';
+      const wcols = Math.max(1, Math.min(3, Number(S.cols) || 3));
+      const cardHtml = (d, rn) => '<div class="card' + (wcols === 1 ? ' wide' : '') + (selected.has(d.id) ? ' sel' : '') + (d.light ? ' lit' : '') + '" id="card-' + domId(d.id) + '" onclick="toggleSel(\'' + d.id + '\')"><div class="nm" title="' + d.name.replace(/"/g, '&quot;') + '">' + noSplit(shortName(stripRoom(d.name, rn))).replace(/</g, '&lt;') + '</div>' + shutterSvg(d) + '<div class="v" id="v-' + domId(d.id) + '"></div></div>';
+      if (grouped()) {
+        // one box per room (order of first appearance); name and lamp sit on the border
+        const order = [], byRoom = new Map();
+        for (const d of filt) { const rk = d.room || ''; if (!byRoom.has(rk)) { byRoom.set(rk, []); order.push(rk); } byRoom.get(rk).push(d); }
+        roomIdsMap = new Map([...byRoom].map(([rk, ds]) => [rk, ds.map((d) => d.id)]));
+        let html = '';
+        for (const rk of order) {
+          const ds = byRoom.get(rk), rn = ds[0].roomName || '';
+          const lampHtml = (S.lamp === false || ds.every((d) => d.look === 'awning')) ? '' : '<div class="rlamp" id="rl-' + domId(rk) + '">' + roomLampSvg(ds.some((d) => d.light)) + '</div>';
+          const cols = Math.max(1, Math.min(3, Number(S.cols) || 3));
+          const w = Math.min(ds.length, cols);
+          const nameHtml = rn ? '<div class="rh" id="rh-' + domId(rk) + '" onclick="toggleRoom(\'' + rk + '\')">' + rn.replace(/</g, '&lt;') + '</div>' : '<div class="rh"></div>';
+          html += '<div class="rg" id="rg-' + domId(rk) + '" style="flex:' + w + ' 1 calc(' + w + '/' + cols + '*100% - 8px)">' + '<div class="rhd">' + nameHtml + lampHtml + '</div>' + '<div class="cards" style="--cols:' + w + '">' + ds.map((d) => cardHtml(d, rn)).join('') + '</div></div>';
+        }
+        el.innerHTML = filt.length ? html : '<div class="empty">No shutters selected.</div>';
+      } else {
+        roomIdsMap = new Map();
+        el.style.setProperty('--icols', wcols);
+        el.innerHTML = filt.length ? filt.map((d) => cardHtml(d, '')).join('') : '<div class="empty">No shutters selected.</div>';
       }
     }
     anyMoving = false;
@@ -124,23 +334,55 @@
       // in-place updates: light, sky (no rebuild → running animations survive)
       const card = document.getElementById('card-' + domId(d.id));
       if (card) {
-        card.classList.toggle('lit', !!d.light);
+        if (d.look === 'awning') {
+          const night = !!SKY.moon;
+          const qa = (sel) => card.querySelector(sel);
+          const setIn = (idx, lit) => {
+            const c0 = lit ? '#f7e4b8' : night ? '#232a33' : '#c5cad1';
+            const c1 = lit ? '#e8c98a' : night ? '#161c24' : '#aab1b9';
+            if (qa('.i0-' + idx)) qa('.i0-' + idx).setAttribute('stop-color', c0);
+            if (qa('.i1-' + idx)) qa('.i1-' + idx).setAttribute('stop-color', c1);
+          };
+          setIn(1, !!d.light); setIn(2, !!(d.aw && d.aw.l2));
+          if (qa('.il')) qa('.il').style.display = d.light ? 'block' : 'none';
+        }
+        const lit = !grouped() && !!d.light && d.look !== 'awning';
+        card.classList.toggle('lit', lit);
         const q = (sel) => card.querySelector(sel);
-        if (q('.cone')) q('.cone').style.display = d.light ? 'block' : 'none';
-        if (q('.bulb')) q('.bulb').style.display = d.light ? 'block' : 'none';
-        if (q('.shade')) q('.shade').setAttribute('fill', d.light ? '#ffd166' : '#8a8a8e');
+        if (q('.cone')) q('.cone').style.display = lit ? 'block' : 'none';
+        if (q('.bulb')) q('.bulb').style.display = lit ? 'block' : 'none';
+        if (q('.shade')) q('.shade').setAttribute('fill', lit ? '#ffd166' : '#8a8a8e');
         if (q('.s0')) { q('.s0').setAttribute('stop-color', SKY.top); q('.s1').setAttribute('stop-color', SKY.bottom); }
-        if (q('.sun')) q('.sun').style.display = SKY.sun ? 'block' : 'none';
+        if (q('.sun')) q('.sun').style.display = SKY.sun && skyClear() ? 'block' : 'none';
         if (q('.moon')) { q('.moon').style.display = SKY.moon ? 'block' : 'none'; if (q('.moonmask')) q('.moonmask').setAttribute('fill', SKY.top); }
       }
       const v = document.getElementById('v-' + domId(d.id));
-      if (v) v.textContent = d.position + ' %' + (d.tilt != null ? ' · ' + d.tilt + '°' : '') + (d.moving ? (d.direction === 'up' ? ' ↑' : d.direction === 'down' ? ' ↓' : ' ↕') : '');
+      if (v) {
+        let arrow = '';
+        if (d.moving) {
+          const dirGlyph = d.look === 'awning'
+            ? (d.direction === 'up' ? ' ↓' : d.direction === 'down' ? ' ↑' : ' ↕')   // extending drops the fabric
+            : (d.direction === 'up' ? ' ↑' : d.direction === 'down' ? ' ↓' : ' ↕');
+          arrow = dirGlyph;
+        }
+        v.textContent = d.position + ' %' + (d.tilt != null ? ' · ' + d.tilt + '°' : '') + arrow;
+      }
       const pat = document.getElementById('cu-' + domId(d.id)) && document.getElementById('sl-' + domId(d.id));
       if (pat) pat.outerHTML = slatPattern(d.id, d.tilt);
       animate(d);
       if (d.moving) anyMoving = true;
     }
+    if (grouped() && S.lamp !== false) {
+      const lightBy = new Map(filt.map((d) => [d.id, !!d.light]));
+      for (const [rk, list] of roomIdsMap) {
+        const rl = document.getElementById('rl-' + domId(rk));
+        if (rl) rl.innerHTML = roomLampSvg(list.some((i) => lightBy.get(i)));
+      }
+    }
     document.getElementById('presets').style.display = (S.presets !== false && filt.length) ? 'flex' : 'none';
+    const allAwn = filt.length > 0 && filt.every((x) => x.look === 'awning');
+    const pb = document.getElementById('presets').children;
+    if (pb.length >= 3) { pb[0].textContent = allAwn ? 'Retract' : 'Open'; pb[1].textContent = allAwn ? 'Half' : 'Shade'; pb[2].textContent = allAwn ? 'Extend' : 'Close'; }
     updatePresetLabels();
     if (HomeyRef.setHeight) HomeyRef.setHeight(document.body.scrollHeight);
   }
@@ -155,11 +397,30 @@
   function toggleSel(id) {
     if (selected.has(id)) selected.delete(id); else selected.add(id);
     const c = document.getElementById('card-' + domId(id)); if (c) c.classList.toggle('sel', selected.has(id));
-    updatePresetLabels();
+    syncRoomHeaders(); updatePresetLabels();
+  }
+  // tap a room header: select the whole room, or deselect it if it already was fully selected
+  function toggleRoom(rk) {
+    const list = roomIdsMap.get(rk) || [];
+    const all = list.length && list.every((i) => selected.has(i));
+    for (const i of list) {
+      if (all) selected.delete(i); else selected.add(i);
+      const c = document.getElementById('card-' + domId(i)); if (c) c.classList.toggle('sel', selected.has(i));
+    }
+    syncRoomHeaders(); updatePresetLabels();
+  }
+  function syncRoomHeaders() {
+    for (const [rk, list] of roomIdsMap) {
+      const all = list.length > 0 && list.every((i) => selected.has(i));
+      const h = document.getElementById('rh-' + domId(rk));
+      if (h) h.classList.toggle('sel', all);
+      const g = document.getElementById('rg-' + domId(rk));
+      if (g) g.classList.toggle('sel', all);
+    }
   }
   function updatePresetLabels() {
     const n = selected.size;
-    document.getElementById('hint').textContent = (n ? (n + ' selected — tap a shutter to deselect') : 'Tap shutters to select — none selected = all');
+    document.getElementById('hint').textContent = (n ? (n + ' selected — tap a shutter to deselect') : (grouped() ? 'Tap shutters or a room name to select — none selected = all' : 'Tap shutters to select — none selected = all'));
   }
   function preset(p) {
     // apply to the tapped selection, or to every shown shutter when nothing is selected

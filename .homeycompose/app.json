@@ -1,6 +1,6 @@
 {
   "id": "com.legrand.hap",
-  "version": "0.11.3",
+  "version": "0.12.0",
   "compatibility": ">=12.4.0",
   "sdk": 3,
   "platforms": [
@@ -127,6 +127,34 @@
     "getSceneClimate": {
       "method": "GET",
       "path": "/scene-climate"
+    },
+    "calibShutters": {
+      "method": "GET",
+      "path": "/calib/shutters"
+    },
+    "calibCommand": {
+      "method": "POST",
+      "path": "/calib/command"
+    },
+    "calibState": {
+      "method": "GET",
+      "path": "/calib/state"
+    },
+    "calibSave": {
+      "method": "POST",
+      "path": "/calib/save"
+    },
+    "awningsList": {
+      "method": "GET",
+      "path": "/awnings"
+    },
+    "awningsSave": {
+      "method": "POST",
+      "path": "/awnings/save"
+    },
+    "endpointAccessories": {
+      "method": "GET",
+      "path": "/endpoint-accessories"
     }
   },
   "images": {

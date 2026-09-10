@@ -109,6 +109,24 @@
     <div class="section">Sensors</div><div class="group" id="list-sensor"></div>
     <div class="section">&nbsp;</div>
     <div class="group"><div class="row link" onclick="refreshDb()"><div class="main"><div class="t">Refresh from gateway</div></div><span id="dbstate" class="v"></span></div></div>
+
+    <div class="section" id="awn-section" style="display:none">Awnings — interior room</div>
+    <div class="group" id="awn-group" style="display:none">
+      <div class="row"><div class="main"><div class="d">The openings behind each awning: their rooms make the drawn glass glow. The awning itself can live in another zone (e.g. Terrace). A single sliding door may take a second room for its right pane.</div></div></div>
+      <div id="awn-rows"></div>
+    </div>
+
+    <div class="section">Assisted shutter calibration</div>
+    <div class="group">
+      <div class="row"><div class="main"><div class="d">Measures the true travel times with your help: the wizard drives the shutter and <b>you tap the moment it physically stops</b>. Far more accurate than the automatic calibration — no gateway reporting lag. Results are saved as the manual travel times and the end hold. Pick a shutter you can see. <b>Tip:</b> before starting, measure the window height and mark the halfway point with a bit of tape — the final check asks whether the shutter stops there.</div></div></div>
+      <div class="row"><select id="cw-select" style="flex:1"></select><button class="text" onclick="calibStart()">Start</button></div>
+      <div id="cw-box" style="display:none">
+        <div class="row"><div class="main"><div class="t" id="cw-title">—</div><div class="d" id="cw-text"></div></div></div>
+        <div class="row" id="cw-actionrow" style="display:none"><button class="primary full" id="cw-btn" style="padding:14px 0 !important; font-size:16px !important" onclick="calibTap()">—</button></div>
+        <div class="row" id="cw-halfrow" style="display:none"><button class="primary" style="flex:1" onclick="calibHalf(true)">Yes, about half</button><button style="flex:1" onclick="calibHalf(false)">No, it's off</button></div>
+        <div class="row link" onclick="calibCancel()"><div class="main"><div class="t" style="color:#8a8a8e">Cancel</div></div></div>
+      </div>
+    </div>
   </div>
 
   <!-- LIGHTS -->
@@ -190,10 +208,12 @@
     <div class="group"><div class="row">
       <select id="filter" style="flex:1"><option value="">All devices</option></select>
       <button onclick="loadLog()">Reload</button>
+      <button onclick="clearLog()" style="color:#b33 !important">Clear</button>
       <button onclick="clearLog()">Clear</button>
       <label class="sw" title="auto-refresh"><input type="checkbox" id="auto" checked /><span></span></label>
     </div>
-    <div class="row"><div class="main"><div class="t">Show debug entries</div></div><label class="sw"><input type="checkbox" id="showdebug" onchange="loadLog()" /><span></span></label></div></div>
+    <div class="row"><div class="main"><div class="t">Show debug entries</div></div><label class="sw"><input type="checkbox" id="showdebug" onchange="loadLog()" /><span></span></label></div>
+    <div class="row"><div class="main"><div class="t">Wipe log on app restart</div><div class="d">Off: the log survives restarts and updates. On: every restart begins a fresh session.</div></div><label class="sw"><input type="checkbox" id="logwipe" onchange="HomeyRef.set('logwipe', this.checked)" /><span></span></label></div></div>
     <div class="section">Activity</div>
     <div id="log"></div>
   </div>
@@ -329,7 +349,8 @@
     Homey.get('exposeStandardTilt', (err, v) => { if (!err) document.getElementById('exposeStd').checked = !!v; });
     Homey.get('heatingNotify', (err, v) => { if (!err) document.getElementById('h-notify').checked = !!v; });
     Homey.get('heatingNotifyRooms', (err, v) => { if (!err) document.getElementById('h-notify-rooms').checked = !!v; });
-    pairingStatus(); loadDevices(); loadRooms(); loadLights(); loadLog();
+    pairingStatus(); loadDevices(); loadRooms(); loadLights(); loadLog(); loadCalibShutters(); loadAwnings();
+    HomeyRef.get('logwipe', (err, v) => { if (!err) document.getElementById('logwipe').checked = v === true; });
     setInterval(() => {
       if (document.getElementById('log-tab').classList.contains('active') && document.getElementById('auto').checked) loadLog();
       if (document.getElementById('devices').classList.contains('active') && !document.querySelector('#devices input[type=text]')) loadDevices();
@@ -355,7 +376,9 @@
           '<div class="d" style="margin-top:6px; display:flex; gap:6px; align-items:center">' +
           '<input type="text" value="' + esc(addr) + '" placeholder="IP (optional)" style="width:150px" id="addr-' + e.id.replace(/:/g, '') + '">' +
           '<button class="text" onclick="setAddress(\'' + e.id + '\')">Save IP</button>' +
-          '<button class="text" onclick="removeEndpoint(\'' + e.id + '\')" style="color:#b33 !important">Remove</button></div></div></div>';
+          '<button class="text" onclick="toggleEpAcc(\'' + e.id + '\')">Devices\u2026</button>' +
+          '<button class="text" onclick="removeEndpoint(\'' + e.id + '\')" style="color:#b33 !important">Remove</button></div>' +
+          '<div id="epacc-' + e.id.replace(/:/g, '') + '" style="display:none"></div></div></div>';
       }
       const dl = document.getElementById('disclist');
       const all = res.discovered;
@@ -395,10 +418,24 @@
     if (!id || !pin) return HomeyRef.alert('Enter the device id and the 8-digit setup code');
     if (!pairTarget && !address) return HomeyRef.alert('Enter the device IP address');
     HomeyRef.api('POST', '/endpoint-pair', { id, pin, address }, (err) => {
-      if (err) return HomeyRef.alert('Pairing failed: ' + err.message);
+      if (err) return HomeyRef.alert('Pairing failed to start: ' + err.message);
       document.getElementById('pairbox').style.display = 'none';
-      setTimeout(pairingStatus, 2500); setTimeout(loadDevices, 6000);
+      watchPairing(id);
     });
+  }
+  // pairing runs in the app in the background (slow gateways exceed the request timeout); poll the outcome
+  function watchPairing(id) {
+    const started = Date.now();
+    HomeyRef.alert('Pairing started \u2014 slow gateways can take up to a minute. The result appears here.');
+    const t = setInterval(() => {
+      HomeyRef.api('GET', '/endpoints', null, (err, res) => {
+        if (err || !res) return;
+        const lp = res.lastPair;
+        if (lp && lp.id === id && lp.state === 'ok') { clearInterval(t); HomeyRef.alert('Paired \u2713'); pairingStatus(); loadDevices(); return; }
+        if (lp && lp.id === id && lp.state === 'failed') { clearInterval(t); HomeyRef.alert('Pairing failed: ' + lp.error); pairingStatus(); return; }
+        if (Date.now() - started > 90000) { clearInterval(t); HomeyRef.alert('Still no result after 90 s \u2014 check the app Log.'); pairingStatus(); }
+      });
+    }, 2500);
   }
   function setAddress(id) {
     const address = document.getElementById('addr-' + id.replace(/:/g, '')).value.trim();
@@ -408,6 +445,21 @@
     HomeyRef.confirm('Remove this HomeKit pairing from Homey? Its devices will become unavailable.', 'warning', (err, ok) => {
       if (!ok) return;
       HomeyRef.api('POST', '/endpoint-remove', { id }, () => { pairingStatus(); loadDevices(); });
+    });
+  }
+  function toggleEpAcc(id) {
+    const box = document.getElementById('epacc-' + id.replace(/:/g, ''));
+    if (!box) return;
+    if (box.style.display !== 'none') { box.style.display = 'none'; return; }
+    box.style.display = 'block';
+    box.innerHTML = '<div class="d" style="padding:6px 0">Loading\u2026</div>';
+    HomeyRef.api('GET', '/endpoint-accessories?id=' + encodeURIComponent(id), null, (err, list) => {
+      if (err) { box.innerHTML = '<div class="d">' + esc(err.message) + '</div>'; return; }
+      box.innerHTML = (list && list.length) ? list.map((a) =>
+        '<div class="row"><div class="main"><div class="t">' + esc(a.name || a.serial) + '</div>' +
+        '<div class="d">' + esc([a.manufacturer, a.model].filter(Boolean).join(' \u00b7 ')) + '</div></div>' +
+        '<span class="v">' + (a.driver ? 'adds as: ' + esc(a.driver) : a.klass === 'bridge' ? 'the gateway itself' : 'not supported yet (' + esc(a.klass) + ')') + '</span></div>'
+      ).join('') : '<div class="d">No accessories reported.</div>';
     });
   }
   function importPairing() {
@@ -849,7 +901,136 @@
   }
   function resumePlan() { HomeyRef.api('POST', '/heating-resume', {}, () => loadHeating()); }
 
+  /* ---------- assisted shutter calibration ---------- */
+  let cw = null;   // { serial, name, tilt, step, t0, up, holdUp, down, holdDown, poll }
+  function loadCalibShutters() {
+    HomeyRef.api('GET', '/calib/shutters', null, (err, list) => {
+      if (err || !list) return;
+      const sel = document.getElementById('cw-select');
+      sel.innerHTML = list.length ? list.map((s) => '<option value="' + esc(s.serial) + '" data-tilt="' + (s.tilt ? 1 : 0) + '">' + esc(s.name) + '</option>').join('') : '<option value="">No shutters added yet</option>';
+    });
+  }
+  function cwShow(title, text, btn) {
+    document.getElementById('cw-title').textContent = title;
+    document.getElementById('cw-text').textContent = text || '';
+    document.getElementById('cw-actionrow').style.display = btn ? 'flex' : 'none';
+    document.getElementById('cw-halfrow').style.display = 'none';
+    if (btn) document.getElementById('cw-btn').textContent = btn;
+  }
+  function cwCmd(value, cb) { HomeyRef.api('POST', '/calib/command', { serial: cw.serial, value }, (err, res) => { if (err) cwFail(err); else cb(res.t); }); }
+  function cwStateGet(cb) { HomeyRef.api('GET', '/calib/state?serial=' + encodeURIComponent(cw.serial), null, (err, res) => { if (err) cwFail(err); else cb(res); }); }
+  function cwFail(err) { if (cw) clearInterval(cw.poll); cwShow('Something went wrong', (err && err.message) || String(err), null); }
+  function cwPollUntilStopped(graceMs, cb) {
+    let sawMoving = false; const begun = Date.now();
+    cw.poll = setInterval(() => cwStateGet((st) => {
+      if (!cw) return;
+      if (st.moving) sawMoving = true;
+      if (!st.moving && (sawMoving || Date.now() - begun > graceMs)) { clearInterval(cw.poll); cb(st.t); }
+    }), 700);
+  }
+  function calibStart() {
+    const sel = document.getElementById('cw-select');
+    if (!sel.value) return;
+    if (cw) clearInterval(cw.poll);
+    cw = { serial: sel.value, name: sel.options[sel.selectedIndex].text, tilt: sel.options[sel.selectedIndex].dataset.tilt === '1', step: 'prep' };
+    document.getElementById('cw-box').style.display = 'block';
+    cwShow('Preparing ' + cw.name, 'Fully closing first to start from a known position. Just wait\u2026', null);
+    cwCmd(0, () => cwPollUntilStopped(12000, () => {
+      cw.step = 'openReady';
+      cwShow('Step 1 of 2 \u2014 full open', 'Tap Start, watch the shutter, and tap the big button at the exact moment it stops moving.', 'Start opening');
+    }));
+  }
+  function calibTap() {
+    if (!cw) return;
+    if (cw.step === 'openReady') {
+      cw.step = 'opening';
+      cwCmd(100, (t) => { cw.t0 = t; cwShow('Opening\u2026', 'Watch the shutter. Tap the moment it stops.', 'It stopped now'); });
+    } else if (cw.step === 'opening') {
+      cw.step = 'openHold';
+      cwStateGet((st) => {
+        cw.up = (st.t - cw.t0) / 1000;
+        cwShow('Measuring the end hold\u2026', 'Waiting for the gateway to notice the stop. Nothing to do.', null);
+        cwPollUntilStopped(0, (tStop) => {
+          cw.holdUp = Math.max(0, (tStop - (cw.t0 + cw.up * 1000)) / 1000);
+          cw.step = 'closeReady';
+          cwShow('Step 2 of 2 \u2014 full close', cw.tilt ? 'Same again downwards. Tap Start, then tap when it reaches fully closed \u2014 ignore the slat re-opening at the end.' : 'Same again downwards. Tap Start, then tap the moment it stops.', 'Start closing');
+        });
+      });
+    } else if (cw.step === 'closeReady') {
+      cw.step = 'closing';
+      cwCmd(0, (t) => { cw.t0 = t; cwShow('Closing\u2026', cw.tilt ? 'Tap the moment it reaches fully closed \u2014 don\u2019t wait for the slats.' : 'Tap the moment it stops.', 'It stopped now'); });
+    } else if (cw.step === 'closing') {
+      cw.step = 'closeHold';
+      cwStateGet((st) => {
+        cw.down = (st.t - cw.t0) / 1000;
+        cwShow('Measuring the end hold\u2026', 'Waiting for the gateway' + (cw.tilt ? ' (slat re-opening included)' : '') + '. Nothing to do.', null);
+        cwPollUntilStopped(0, (tStop) => {
+          cw.holdDown = Math.max(0, (tStop - (cw.t0 + cw.down * 1000)) / 1000);
+          cw.step = 'half';
+          cwShow('Check \u2014 half open', 'Sending the shutter to 50 %. When it stops: does the bottom edge land at your halfway mark (or look about half open)?', null);
+          cwCmd(50, () => cwPollUntilStopped(12000, () => { document.getElementById('cw-halfrow').style.display = 'flex'; }));
+        });
+      });
+    }
+  }
+  function calibHalf(ok) {
+    const r = cw;
+    HomeyRef.api('POST', '/calib/save', { serial: r.serial, up: r.up, down: r.down, holdUp: r.holdUp, holdDown: r.holdDown }, (err) => {
+      if (err) return cwFail(err);
+      cwShow('Saved \u2014 ' + r.name,
+        'Up ' + r.up.toFixed(1) + ' s \u00b7 down ' + r.down.toFixed(1) + ' s \u00b7 end hold ' + Math.round(r.holdDown) + ' s (closed) / ' + Math.round(r.holdUp) + ' s (open).' +
+        (ok ? '' : ' The 50 % position looked off: the module\u2019s own calibration is stale \u2014 recalibrate the shutter in Home + Control (or with the wall-switch procedure), then run this wizard again.'), null);
+      cw = null;
+    });
+  }
+  function calibCancel() { if (cw) clearInterval(cw.poll); cw = null; document.getElementById('cw-box').style.display = 'none'; }
+
+  /* ---------- awnings: openings ---------- */
+  const AWN_TYPES = [['window', 'Window'], ['full', 'Full glass (door / window)'], ['french', 'French door'], ['sliding', 'Sliding door (wide)'], ['door', 'Door (push)']];
+  let awnRooms = [];
+  function loadAwnings() {
+    HomeyRef.api('GET', '/awnings', null, (err, res) => {
+      if (err || !res || !res.awnings.length) return;
+      awnRooms = res.rooms;
+      document.getElementById('awn-section').style.display = 'block';
+      document.getElementById('awn-group').style.display = 'block';
+      const roomSel = (id, cur) => '<select data-f="' + id + '" onchange="saveAwnRow(this)"><option value="">\u2014 not set \u2014</option>' +
+        awnRooms.map((rm) => '<option value="' + esc(rm.id) + '"' + (rm.id === cur ? ' selected' : '') + '>' + esc(rm.name) + '</option>').join('') + '</select>';
+      const typeSel = (id, cur) => '<select data-f="' + id + '" onchange="saveAwnRow(this)">' +
+        AWN_TYPES.map((t) => '<option value="' + t[0] + '"' + (t[0] === cur ? ' selected' : '') + '>' + t[1] + '</option>').join('') + '</select>';
+      document.getElementById('awn-rows').innerHTML = res.awnings.map((a) => {
+        const two = a.n === 2, sld = a.t1 === 'sliding';
+        return '<div class="awnrow" data-serial="' + esc(a.serial) + '">' +
+          '<div class="row"><div class="main"><div class="t">' + esc(a.name) + '</div></div>' +
+          '<select data-f="n" onchange="saveAwnRow(this)"><option value="1"' + (two ? '' : ' selected') + '>1 opening</option><option value="2"' + (two ? ' selected' : '') + '>2 openings</option></select></div>' +
+          '<div class="row"><div class="main"><div class="d">Opening 1</div></div>' + roomSel('z1', a.z1) + typeSel('t1', a.t1) + '</div>' +
+          '<div class="row awn-2" style="display:' + (two ? 'flex' : 'none') + '"><div class="main"><div class="d">Opening 2</div></div>' + roomSel('z2', a.z2) + typeSel('t2', a.t2) + '</div>' +
+          '<div class="row awn-p2" style="display:' + (!two && sld ? 'flex' : 'none') + '"><div class="main"><div class="d">Right pane room (optional)</div></div>' + roomSel('z2', a.z2) + '</div>' +
+          '</div>';
+      }).join('');
+    });
+  }
+  function saveAwnRow(el) {
+    const row = el.closest('.awnrow');
+    const get = (f) => { const sels = row.querySelectorAll('select[data-f="' + f + '"]'); for (const sl of sels) { if (sl.offsetParent !== null) return sl; } return sels[0]; };
+    const val = (f) => { const sl = get(f); return sl ? sl.value : ''; };
+    const txt = (f) => { const sl = get(f); return sl && sl.selectedIndex > 0 ? sl.options[sl.selectedIndex].text : ''; };
+    const n = Number(val('n')) === 2 ? 2 : 1;
+    const body = { serial: row.dataset.serial, n, z1: val('z1'), z1Name: txt('z1'), t1: val('t1'), z2: val('z2'), z2Name: txt('z2'), t2: val('t2') };
+    row.querySelector('.awn-2').style.display = n === 2 ? 'flex' : 'none';
+    row.querySelector('.awn-p2').style.display = n === 1 && body.t1 === 'sliding' ? 'flex' : 'none';
+    HomeyRef.api('POST', '/awnings/save', body, (err) => {
+      if (err) HomeyRef.alert((err && err.message) || String(err));
+    });
+  }
+
   /* ---------- log ---------- */
+  function clearLog() {
+    HomeyRef.confirm('Clear the log and start a fresh debug session?', 'warning', (err, ok) => {
+      if (!ok) return;
+      HomeyRef.api('POST', '/log/clear', {}, () => loadLog());
+    });
+  }
   function loadLog() {
     const serial = document.getElementById('filter').value;
     HomeyRef.api('GET', '/log' + (serial ? '?device=' + encodeURIComponent(serial) : ''), null, (err, allEntries) => {
@@ -863,8 +1044,6 @@
         '<span class="' + e.level + '">' + fmt(e.ts) + '  ' + (e.serial ? '[' + esc(names[e.serial] || e.serial.slice(-8)) + '] ' : '[app] ') + esc(e.msg) + '</span>').join('\n');
     });
   }
-  function clearLog() { HomeyRef.api('POST', '/log/clear', null, () => loadLog()); }
-
 </script>
 </body>
 </html>

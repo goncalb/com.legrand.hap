@@ -2,6 +2,49 @@
 
 All notable changes to this project are documented here. Versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.12.0] — 2026-09-09
+
+### Added
+- **Covering looks**: per-device "Drawn as" — Roller shutter, Roller shade, Curtain split, Curtain single,
+  **Awning**. Awnings draw from outside (wall, interior behind the glass lit by its room's lights), with
+  1–2 configurable openings, five opening types (window, full glass, French door, wide sliding door with
+  two independently lit panes, push door), per-opening interior rooms, an invert-direction setting applied
+  at the device boundary (position, Flows, widget and presets all physical), and Retract / Half / Extend
+  preset labels in all-awning widgets.
+- **Weather-aware windows**: Open-Meteo at Homey's location — clouds, animated rain and snow behind the
+  glass, sun only on clear days, the moon on every night sky with clouds passing in front.
+- **Grouped shutters layout**: a bordered box per room (name inside the frame, room-light pendant), plus a
+  "Cards per row" setting (3 / 2 / 1) up to a full-width card with constant line weights.
+- **Rocker-style stop**: pressing the direction a shutter already moves in stops it (position estimated from
+  learned travel); works from widget presets, the slider endpoints and windowcoverings_state.
+- **Assisted calibration wizard** (App settings → Devices): you tap the moment the shutter physically stops;
+  measures true travel and the gateway's end-hold, saves manual travel times. Automatic variant as a
+  maintenance button. Timeline notifications.
+- **Lights widget room scenes**: side-view rooms with furniture inferred from the room name, lamps drawn in
+  place by type and anchored to matching furniture.
+- **Multi-vendor HomeKit gateways**: first non-Legrand bridge verified (Somfy TaHoma Switch, io awning).
+  Pairing hardened — fresh mDNS advertisement before every attempt, automatic retry when the gateway moved
+  port, TCP pre-flight, SRP timeout, plain-PairSetup-first method order (TaHoma ignores with-auth and a
+  dangling attempt jams it Busy), background pairing with a polled verdict, full Log narration.
+- **Endpoint "Devices…" preview**: what a paired bridge exposes and which driver each item maps to, before
+  adding anything; unsupported accessories log their raw HAP services.
+- **Diagnostics**: the log survives restarts and updates, Clear button, "wipe on restart" toggle,
+  debug-level accessory inventory per DB refresh.
+- **Pairing auto-dress**: awning/curtain/screen models pair with matching icon, class and look; new thin
+  filled-path icon family (driver tile + five types).
+
+### Changed
+- Windows render ~30 % larger in the grouped layout; dark mode fully theme-aware (frames, mullions, slats,
+  fabric, interior dividers); driver display name "Shutter / Covering"; widget device picker filters by
+  capability so sunshade-class awnings appear.
+
+### Fixed
+- moods cached and the serial→device map (CPU per widget poll); device snapshot cache 4 s; zones manager
+  connected (devices deliberately not — see Dead ends).
+- Manual pairing address was ignored when the device was discovered; pairing could hang without a verdict;
+  the failure handler crashed (`logger.log`); ManagerApi warning for the calibration helper.
+- Sliding-door panes drawn at equal height; awning moving parts hidden at 0 %.
+
 ## [0.11.3] — 2026-09-08
 
 ### Added

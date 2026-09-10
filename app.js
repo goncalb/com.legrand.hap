@@ -10,6 +10,19 @@ class LegrandHapApp extends Homey.App {
 
   async onInit() {
     this.logger = new Logger(500);
+    // the log survives app restarts and updates unless "wipe on restart" is enabled in the Log tab
+    const wipeOnRestart = this.homey.settings.get('logwipe') === true;
+    if (wipeOnRestart) this.homey.settings.set('logbuf', []);
+    else this.logger.restore(this.homey.settings.get('logbuf'));
+    let logSaveT = null;
+    this.logger.onChange = () => {
+      if (logSaveT) return;
+      logSaveT = setTimeout(() => {
+        logSaveT = null;
+        if (this.homey.settings.get('logwipe') !== true) this.homey.settings.set('logbuf', this.logger.entries);
+      }, 4000);
+    };
+    this.logger.add('info', null, `--- app started${wipeOnRestart ? ' (log wiped: fresh session)' : ''} ---`);
     const hlog = (level, serial, msg) => { this.logger.add(level, serial, msg); this.log(`[${serial || 'app'}] ${msg}`); };
     this.hlog = hlog;
     // Runtime and SDK messages (deprecations, unhandled errors) otherwise only reach stdout — mirror them into the Log tab.

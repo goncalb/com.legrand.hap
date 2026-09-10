@@ -24,10 +24,13 @@ module.exports = {
   async getLights({ homey, query }) {
     const ids = query.ids ? String(query.ids).split(',').filter(Boolean) : [];
     const { list, zones } = await pick(homey, ids, query.fresh === '1');
-    const lamps = list.map((d) => ({ ...L.describe(homey, d), zoneName: H.zoneName(zones, d.zone) || 'Unassigned' }));
-    const zoneIds = [...new Set(lamps.map((l) => l.zone))];
+    const lamps = list.map((d) => {
+      const room = H.roomZone(zones, d.zone);
+      return { ...L.describe(homey, d), zoneName: H.zoneName(zones, d.zone) || 'Unassigned', room, roomName: H.zoneName(zones, room) || 'Unassigned' };
+    });
+    const roomIds = [...new Set(lamps.map((l) => l.room))];
     const allMoods = query.moods === '0' ? [] : await H.moods(homey);
-    const moods = allMoods.filter((m) => zoneIds.includes(m.zone)).map((m) => ({ id: m.id, name: m.name, zone: m.zone, colour: moodColour(m) }));
+    const moods = allMoods.filter((m) => roomIds.includes(H.roomZone(zones, m.zone))).map((m) => ({ id: m.id, name: m.name, zone: m.zone, room: H.roomZone(zones, m.zone), colour: moodColour(m) }));
     return { lamps, moods };
   },
   async toggle({ homey, body }) {
@@ -38,8 +41,8 @@ module.exports = {
     return { on };
   },
   async allOff({ homey, body }) {
-    const { list } = await pick(homey, body.ids || []);
-    const targets = body.zone ? list.filter((d) => d.zone === body.zone) : list;
+    const { list, zones } = await pick(homey, body.ids || []);
+    const targets = body.zone ? list.filter((d) => H.roomZone(zones, d.zone) === body.zone) : list;
     await Promise.allSettled(targets.filter(H.isOn).map((d) => H.setCapability(homey, d.id, 'onoff', false)));
     return true;
   },

@@ -4,6 +4,56 @@
   },
   "settings": [
     {
+      "id": "grouping",
+      "type": "dropdown",
+      "title": {
+        "en": "Blind layout"
+      },
+      "value": "grouped",
+      "values": [
+        {
+          "id": "individual",
+          "title": {
+            "en": "Individual blinds (flat list)"
+          }
+        },
+        {
+          "id": "grouped",
+          "title": {
+            "en": "Grouped by room (box around each room)"
+          }
+        }
+      ]
+    },
+    {
+      "id": "cols",
+      "type": "dropdown",
+      "title": {
+        "en": "Cards per row"
+      },
+      "value": "3",
+      "values": [
+        {
+          "id": "3",
+          "title": {
+            "en": "3 (compact)"
+          }
+        },
+        {
+          "id": "2",
+          "title": {
+            "en": "2 (larger drawings)"
+          }
+        },
+        {
+          "id": "1",
+          "title": {
+            "en": "1 (full width)"
+          }
+        }
+      ]
+    },
+    {
       "id": "shade",
       "type": "dropdown",
       "title": {
@@ -14,19 +64,19 @@
         {
           "id": "22",
           "title": {
-            "en": "22°"
+            "en": "22\u00b0"
           }
         },
         {
           "id": "44",
           "title": {
-            "en": "44°"
+            "en": "44\u00b0"
           }
         },
         {
           "id": "66",
           "title": {
-            "en": "66°"
+            "en": "66\u00b0"
           }
         }
       ]
@@ -46,7 +96,7 @@
         "en": "Show the room light on the windows"
       },
       "hint": {
-        "en": "Pendant lamp above each window, lit when a lamp of that room is on (App settings → Devices → Rooms & lights)."
+        "en": "Lit when a lamp of that room is on (App settings \u2192 Devices \u2192 Rooms & lights). Individual layout: pendant above each window. Grouped layout: one lamp on the room box."
       },
       "value": true
     }
@@ -66,7 +116,7 @@
     "type": "app",
     "singular": false,
     "filter": {
-      "class": "windowcoverings"
+      "capabilities": "windowcoverings_set"
     }
   }
 }

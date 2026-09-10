@@ -1,8 +1,8 @@
 <!doctype html>
 <html><head><meta charset="utf-8"/>
 <style>
-  :root { --lg-card: var(--homey-color-mono-000, #fff); --lg-border: var(--homey-color-mono-200, #e3e3e3); --lg-brand: #DA5046; --lg-text: var(--homey-text-color, #1c1c1e); --lg-muted: var(--homey-text-color-light, #8a8a8e); --lg-chip: #f7f7f9; }
-  @media (prefers-color-scheme: dark) { :root { --lg-card: #3a3a3c; --lg-border: #48484a; --lg-brand: #f0716a; --lg-text: #f2f2f7; --lg-muted: #c7c7cc; --lg-chip: #48484a; } }
+  :root { --lg-card: var(--homey-color-mono-000, #fff); --lg-border: var(--homey-color-mono-200, #e3e3e3); --lg-brand: #DA5046; --lg-text: var(--homey-text-color, #1c1c1e); --lg-muted: var(--homey-text-color-light, #8a8a8e); --lg-chip: #f7f7f9; --lg-furn: #dcdce1; --lg-furn2: #c9c9d1; }
+  @media (prefers-color-scheme: dark) { :root { --lg-card: #3a3a3c; --lg-border: #48484a; --lg-brand: #f0716a; --lg-text: #f2f2f7; --lg-muted: #c7c7cc; --lg-chip: #48484a; --lg-furn: #545458; --lg-furn2: #636368; } }
   html, body { margin: 0; overflow: hidden; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
   body { font-family: var(--homey-font-family-default, -apple-system, sans-serif); color: var(--lg-text); font-size: 12px; }
   .grid { display: grid; gap: 8px; padding: 8px; width: 100%; box-sizing: border-box; }
@@ -18,10 +18,9 @@
   .room .hd { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
   .room .hd .t { font-weight: 600; color: var(--lg-brand); flex: 1; }
   .room .hd .s { font-size: 10px; color: var(--lg-muted); }
-  .room .lamps { display: flex; flex-wrap: wrap; gap: 6px; justify-content: space-around; }
-  .room .lamp { text-align: center; cursor: pointer; user-select: none; width: 64px; }
-  .room .lamp .art { height: 56px; display: flex; align-items: center; justify-content: center; }
-  .room .lamp .n { font-size: 9px; color: var(--lg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .room .scene svg { width: 100%; height: auto; display: block; }
+  .room .scene g.hs { cursor: pointer; }
+  .room .scene g.hs.unavail { opacity: .45; }
   .room .btns { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
   .btn { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--lg-border); background: var(--lg-chip); color: var(--lg-text); font-size: 11px; cursor: pointer; }
   .btn.brand { border-color: var(--lg-brand); color: var(--lg-brand); font-weight: 600; background: var(--lg-card); }
@@ -34,8 +33,8 @@
   .panel .hd { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
   .panel .hd .t { font-weight: 600; color: var(--lg-brand); flex: 1; }
   .panel .x { border: none; background: none; color: var(--lg-muted); font-size: 16px; cursor: pointer; }
-  .panel .r { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 11px; }
-  .panel .r label { width: 64px; color: var(--lg-muted); }
+  .panel .r { display: flex; align-items: center; gap: 8px; margin: 11px 0; font-size: 13px; }
+  .panel .r label { width: 72px; color: var(--lg-muted); }
   .panel .r.inactive { opacity: .4; }
   .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--lg-border); vertical-align: middle; }
   .panel input[type=range] { flex: 1; }
@@ -70,17 +69,222 @@
     return `<svg viewBox="0 0 60 60" width="${size}" height="${size}">${g}</svg>`;
   }
   const stateText = (l) => !l.available ? 'unreachable' : !l.on ? 'off' : (l.dim != null && l.hasDim ? `on · ${l.dim} %` : 'on');
+  // ---- Room scenes (side view: ceiling on top, floor at the bottom) ----
+  const SC = { W: 460, CEIL: 10, FLOOR: 128, H: 160 };
+  function sceneKind(name) {
+    const n = String(name || '').toLowerCase();
+    if (/kitchen|cuisine|cozinha/.test(n)) return 'kitchen';
+    if (/laundry|buanderie|utility/.test(n)) return 'laundry';
+    if (/dining|manger|jantar/.test(n)) return 'dining';
+    if (/living|family|lounge|salon|s[ée]jour|sala/.test(n)) return 'living';
+    if (/office|bureau|study|escrit[óo]rio/.test(n)) return 'office';
+    if (/bath|douche|toilet|wc|salle de bain|banho/.test(n)) return 'bath';
+    if (/bed|chambre|quarto|\broom\b/.test(n)) return 'bedroom';
+    return 'plain';
+  }
+  function sceneDef(kind) {
+    const F = 'var(--lg-furn)', F2 = 'var(--lg-furn2)', c = SC.CEIL, f = SC.FLOOR;
+    if (kind === 'kitchen') return {
+      furn: `<path d="M 60 ${c} h 60 v 20 l 12 14 h -84 l 12 -14 Z" fill="${F2}"/>` +
+        `<rect x="150" y="${c + 6}" width="110" height="32" rx="3" fill="${F}"/><line x1="205" y1="${c + 6}" x2="205" y2="${c + 38}" stroke="var(--lg-card)" stroke-width="2"/>` +
+        `<rect x="30" y="${f - 44}" width="230" height="7" rx="2" fill="${F2}"/><rect x="34" y="${f - 37}" width="222" height="37" fill="${F}"/>` +
+        `<circle cx="80" cy="${f - 40.5}" r="3.5" fill="var(--lg-card)"/><circle cx="100" cy="${f - 40.5}" r="3.5" fill="var(--lg-card)"/>` +
+        `<rect x="187" y="${f - 42}" width="36" height="5" rx="2" fill="var(--lg-card)"/><path d="M 205 ${f - 44} v -9 h 9 v 3" fill="none" stroke="${F2}" stroke-width="2.5"/>` +
+        `<rect x="330" y="${f - 50}" width="120" height="7" rx="2" fill="${F2}"/><rect x="338" y="${f - 43}" width="104" height="43" fill="${F}"/>`,
+      pendX: [390], pendDrop: SC.FLOOR - 50 - 42, hangX: [40, 285, 320], hangSpan: [262, 335], wallX: [440], surfaces: [], floorSlots: [300], stripSlot: { x1: 152, x2: 258, y: c + 42 },
+      anchors: [{ re: /hob|cook|stove|plaque|cuisson|fog[aã]o/, x: 90, mount: 'ceil' }, { re: /sink|[ée]vier|lava/, x: 205, mount: 'ceil', as: 'spot' }, { re: /table|island|[îi]lot|ilha|mesa/, x: 390, mount: 'ceil', drop: SC.FLOOR - 50 - 42 }]
+    };
+    if (kind === 'living') return {
+      furn: `<rect x="150" y="${f - 40}" width="140" height="28" rx="9" fill="${F}"/><rect x="153" y="${f - 60}" width="134" height="24" rx="9" fill="${F2}"/>` +
+        `<rect x="140" y="${f - 48}" width="14" height="48" rx="6" fill="${F2}"/><rect x="286" y="${f - 48}" width="14" height="48" rx="6" fill="${F2}"/>` +
+        `<rect x="322" y="${f - 30}" width="50" height="5" rx="2" fill="${F2}"/><line x1="329" y1="${f - 25}" x2="329" y2="${f}" stroke="${F2}" stroke-width="4"/><line x1="365" y1="${f - 25}" x2="365" y2="${f}" stroke="${F2}" stroke-width="4"/>` +
+        `<rect x="392" y="${c + 24}" width="64" height="40" rx="3" fill="${F2}"/>`,
+      pendX: [220], pendDrop: 32, hangX: [70, 110, 220], hangSpan: [40, 260], wallX: [34], surfaces: [{ x: 347, y: f - 30 }], floorSlots: [80, 110], stripSlot: { x1: 394, x2: 454, y: c + 70 },
+      anchors: [{ re: /tv|t[ée]l[ée]/, x: 424, mount: 'ceil' }, { re: /sofa|couch|canap|reading|lecture|leitura/, x: 347, mount: 'surface', y: f - 30 }]
+    };
+    if (kind === 'dining') return {
+      furn: `<rect x="160" y="${f - 42}" width="160" height="6" rx="2" fill="${F2}"/><line x1="175" y1="${f - 36}" x2="175" y2="${f}" stroke="${F2}" stroke-width="5"/><line x1="305" y1="${f - 36}" x2="305" y2="${f}" stroke="${F2}" stroke-width="5"/>` +
+        `<path d="M 120 ${f} v -50 q 0 -4 4 -4 h 4 v 30 h 18 v 24 Z" fill="${F}"/><path d="M 360 ${f} v -50 q 0 -4 -4 -4 h -4 v 30 h -18 v 24 Z" fill="${F}"/>`,
+      pendX: [240], pendDrop: SC.FLOOR - 42 - 40, hangX: [70, 240, 410], hangSpan: [50, 430], wallX: [400], surfaces: [], floorSlots: [60, 420], stripSlot: null,
+      anchors: [{ re: /table|mesa/, x: 240, mount: 'ceil', drop: SC.FLOOR - 42 - 40 }]
+    };
+    if (kind === 'bedroom') return {
+      furn: `<rect x="150" y="${f - 26}" width="130" height="20" rx="6" fill="${F}"/><rect x="142" y="${f - 42}" width="14" height="42" rx="4" fill="${F2}"/><rect x="160" y="${f - 32}" width="34" height="9" rx="4" fill="var(--lg-card)"/>` +
+        `<rect x="96" y="${f - 24}" width="36" height="24" rx="3" fill="${F2}"/><rect x="296" y="${f - 24}" width="36" height="24" rx="3" fill="${F2}"/>`,
+      pendX: [215], pendDrop: 30, hangX: [215], hangSpan: [40, 430], wallX: [40, 390], surfaces: [{ x: 114, y: f - 24 }, { x: 314, y: f - 24 }], floorSlots: [60, 400], stripSlot: null,
+      anchors: [{ re: /bed|lit|cama/, x: 215, mount: 'ceil' }]
+    };
+    if (kind === 'office') return {
+      furn: `<rect x="170" y="${f - 44}" width="150" height="6" rx="2" fill="${F2}"/><line x1="182" y1="${f - 38}" x2="182" y2="${f}" stroke="${F2}" stroke-width="5"/><line x1="308" y1="${f - 38}" x2="308" y2="${f}" stroke="${F2}" stroke-width="5"/>` +
+        `<rect x="236" y="${f - 74}" width="42" height="26" rx="2" fill="${F2}"/><line x1="257" y1="${f - 48}" x2="257" y2="${f - 44}" stroke="${F2}" stroke-width="4"/>`,
+      pendX: [140], pendDrop: 32, hangX: [100, 360, 420], hangSpan: [50, 430], wallX: [40], surfaces: [{ x: 200, y: f - 44 }], floorSlots: [80, 400], stripSlot: { x1: 176, x2: 314, y: f - 8 },
+      anchors: [{ re: /desk|bureau|secret[áa]ria/, x: 200, mount: 'surface', y: f - 44 }]
+    };
+    if (kind === 'bath') return {
+      furn: `<rect x="180" y="${f - 42}" width="110" height="42" rx="3" fill="${F}"/><rect x="172" y="${f - 48}" width="126" height="6" rx="2" fill="${F2}"/>` +
+        `<rect x="196" y="${c + 18}" width="78" height="46" rx="4" fill="${F2}"/><rect x="200" y="${c + 22}" width="70" height="38" rx="3" fill="var(--lg-card)"/>`,
+      pendX: [110], pendDrop: 34, hangX: [110, 360], hangSpan: [60, 420], wallX: [150, 320], surfaces: [], floorSlots: [90, 380], stripSlot: { x1: 198, x2: 272, y: c + 14 }
+    };
+    if (kind === 'laundry') return {
+      furn: `<rect x="190" y="${f - 56}" width="56" height="56" rx="4" fill="${F}"/><circle cx="218" cy="${f - 26}" r="16" fill="${F2}"/><circle cx="218" cy="${f - 26}" r="10" fill="var(--lg-card)"/><circle cx="198" cy="${f - 49}" r="2.5" fill="${F2}"/>`,
+      pendX: [218], pendDrop: 30, hangX: [120, 320], hangSpan: [60, 400], wallX: [60], surfaces: [], floorSlots: [100, 340], stripSlot: null
+    };
+    return { furn: '', pendX: [150, 310], pendDrop: 34, hangX: [90, 230, 370], hangSpan: [40, 430], wallX: [40, 420], surfaces: [], floorSlots: [], stripSlot: null };
+  }
+  function spread(n, x1, x2) { const out = []; for (let i = 0; i < n; i++) out.push(x1 + (i + 0.5) * (x2 - x1) / n); return out; }
+  function glowSvg(cx, cy, col, r, dim) {
+    const a = 0.14 + 0.26 * ((dim == null ? 100 : dim) / 100);
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}" opacity="${a.toFixed(2)}"/><circle cx="${cx}" cy="${cy}" r="${(r * 0.55).toFixed(1)}" fill="${col}" opacity="${(a * 0.8).toFixed(2)}"/>`;
+  }
+  // One lamp drawn into the scene. kind decides the shape; pos = { x, y (surface/floor), drop }.
+  function sceneLampSvg(lamp, kind, pos) {
+    const lit = lamp.on && lamp.available, col = lamp.colour || '#ffd166';
+    const sh = lit ? col : 'var(--lg-muted)', hw = 'var(--lg-muted)', x = pos.x, c = SC.CEIL, f = SC.FLOOR;
+    let g = '', hit = null;
+    if (kind === 'pendant') {
+      const dy = c + (pos.drop || 34);
+      g = `<line x1="${x}" y1="${c}" x2="${x}" y2="${dy}" stroke="${hw}" stroke-width="1.6"/>` +
+        (lit ? glowSvg(x, dy + 10, col, 22, lamp.dim) : '') +
+        `<path d="M ${x - 14} ${dy + 10} A 14 14 0 0 1 ${x + 14} ${dy + 10} Z" fill="${sh}"/>`;
+      hit = { x: x - 22, y: c, w: 44, h: dy + 24 - c };
+    } else if (kind === 'spot') {
+      g = `<rect x="${x - 7}" y="${c}" width="14" height="7" rx="3" fill="${hw}"/>` +
+        (lit ? `<path d="M ${x - 4} ${c + 7} L ${x - 15} ${c + 44} L ${x + 15} ${c + 44} L ${x + 4} ${c + 7} Z" fill="${col}" opacity="0.32"/>` + glowSvg(x, c + 8, col, 11, lamp.dim) : '') +
+        `<circle cx="${x}" cy="${c + 7}" r="4.5" fill="${lit ? col : hw}"/>`;
+      hit = { x: x - 20, y: c, w: 40, h: 52 };
+    } else if (kind === 'bulbHang') {
+      g = `<line x1="${x}" y1="${c}" x2="${x}" y2="${c + 26}" stroke="${hw}" stroke-width="1.6"/>` +
+        (lit ? glowSvg(x, c + 34, col, 16, lamp.dim) : '') +
+        `<circle cx="${x}" cy="${c + 34}" r="8" fill="${lit ? col : 'var(--lg-furn2)'}" stroke="${hw}" stroke-width="1"/>`;
+      hit = { x: x - 20, y: c, w: 40, h: 54 };
+    } else if (kind === 'floor') {
+      g = `<line x1="${x}" y1="${f}" x2="${x}" y2="${f - 60}" stroke="${hw}" stroke-width="2"/><line x1="${x - 11}" y1="${f}" x2="${x + 11}" y2="${f}" stroke="${hw}" stroke-width="3"/>` +
+        (lit ? glowSvg(x, f - 68, col, 20, lamp.dim) : '') +
+        `<path d="M ${x - 12} ${f - 60} L ${x + 12} ${f - 60} L ${x + 8} ${f - 77} L ${x - 8} ${f - 77} Z" fill="${sh}"/>`;
+      hit = { x: x - 20, y: f - 84, w: 40, h: 84 };
+    } else if (kind === 'table') {
+      const ty = pos.y;
+      g = `<line x1="${x}" y1="${ty}" x2="${x}" y2="${ty - 18}" stroke="${hw}" stroke-width="2"/>` +
+        (lit ? glowSvg(x, ty - 26, col, 14, lamp.dim) : '') +
+        `<path d="M ${x - 10} ${ty - 18} L ${x + 10} ${ty - 18} L ${x + 6.5} ${ty - 31} L ${x - 6.5} ${ty - 31} Z" fill="${sh}"/>`;
+      hit = { x: x - 18, y: ty - 38, w: 36, h: 40 };
+    } else if (kind === 'strip') {
+      const x1 = pos.x1, x2 = pos.x2, sy = pos.y;
+      g = (lit ? `<rect x="${x1}" y="${sy - 5}" width="${x2 - x1}" height="10" rx="5" fill="${col}" opacity="0.25"/>` : '') +
+        `<rect x="${x1}" y="${sy - 1.5}" width="${x2 - x1}" height="3" rx="1.5" fill="${lit ? col : hw}"/>`;
+      hit = { x: x1 - 4, y: sy - 12, w: x2 - x1 + 8, h: 24 };
+    } else if (kind === 'wall') {
+      const wy = pos.y;
+      g = `<line x1="${x}" y1="${wy - 12}" x2="${x}" y2="${wy + 12}" stroke="${hw}" stroke-width="3"/>` +
+        (lit ? glowSvg(x, wy - 14, col, 14, lamp.dim) : '') +
+        `<path d="M ${x - 8} ${wy - 6} L ${x + 8} ${wy - 6} L ${x + 5} ${wy - 16} L ${x - 5} ${wy - 16} Z" fill="${sh}"/>`;
+      hit = { x: x - 18, y: wy - 26, w: 36, h: 44 };
+    } else if (kind === 'switch') {
+      const wy = pos.y;
+      g = `<rect x="${x - 7}" y="${wy - 11}" width="14" height="22" rx="2.5" fill="var(--lg-chip)" stroke="${hw}" stroke-width="1.2"/><rect x="${x - 4}" y="${wy - 7}" width="8" height="14" rx="1.5" fill="${lit ? col : 'var(--lg-furn2)'}"/>`;
+      hit = { x: x - 18, y: wy - 20, w: 36, h: 40 };
+    } else { // outdoor lantern, standing
+      g = `<line x1="${x}" y1="${f}" x2="${x}" y2="${f - 30}" stroke="${hw}" stroke-width="2"/>` +
+        (lit ? glowSvg(x, f - 40, col, 15, lamp.dim) : '') +
+        `<path d="M ${x - 7} ${f - 30} L ${x + 7} ${f - 30} L ${x + 5} ${f - 48} L ${x - 5} ${f - 48} Z" fill="${lit ? col : 'var(--lg-furn2)'}" stroke="${hw}" stroke-width="1"/><path d="M ${x - 8} ${f - 48} L ${x + 8} ${f - 48} L ${x + 4} ${f - 52} L ${x - 4} ${f - 52} Z" fill="${hw}"/>`;
+      hit = { x: x - 18, y: f - 58, w: 36, h: 58 };
+    }
+    return { g, hit };
+  }
+  function anchorPlace(lp, a, def) {
+    const t = lp.type, f = SC.FLOOR, c = SC.CEIL;
+    if (t === 'strip') return { lamp: lp, kind: 'strip', pos: { x1: a.x - 35, x2: a.x + 35, y: a.mount === 'surface' ? a.y - 4 : c + 42 } };
+    if (a.as) return { lamp: lp, kind: a.as, pos: { x: a.x } };
+    if (a.mount === 'surface') {
+      if (t === 'floor') return { lamp: lp, kind: 'floor', pos: { x: a.x } };
+      if (t === 'ceiling') return { lamp: lp, kind: 'pendant', pos: { x: a.x, drop: a.y - c - 40 } };
+      if (t === 'spot') return { lamp: lp, kind: 'spot', pos: { x: a.x } };
+      return { lamp: lp, kind: 'table', pos: { x: a.x, y: a.y } };
+    }
+    if (t === 'ceiling') return { lamp: lp, kind: 'pendant', pos: { x: a.x, drop: a.drop || def.pendDrop || 34 } };
+    if (t === 'table') return { lamp: lp, kind: 'table', pos: { x: a.x, y: f } };
+    if (t === 'floor') return { lamp: lp, kind: 'floor', pos: { x: a.x } };
+    if (t === 'spot') return { lamp: lp, kind: 'spot', pos: { x: a.x } };
+    return { lamp: lp, kind: 'bulbHang', pos: { x: a.x } };
+  }
+  function sceneSvg(zoneLamps, kindName) {
+    const def = sceneDef(kindName), f = SC.FLOOR, c = SC.CEIL;
+    const byName = (a, b) => String(a.name).localeCompare(String(b.name));
+    const placed = [];  // { lamp, kind, pos }
+    // an area (or lamp) name matching a scene anchor pins the lamp to that piece of furniture
+    const anchors = (def.anchors || []).map((a) => ({ ...a, used: false }));
+    const rest = [];
+    for (const lp of [...zoneLamps].sort(byName)) {
+      const area = lp.zoneName && lp.roomName && lp.zoneName !== lp.roomName ? lp.zoneName : '';
+      const hay = (area + ' ' + (lp.name || '')).toLowerCase();
+      const a = anchors.find((an) => !an.used && an.re.test(hay));
+      if (a) { a.used = true; placed.push(anchorPlace(lp, a, def)); } else rest.push(lp);
+    }
+    const pend = rest.filter((z) => z.type === 'ceiling');
+    const spots = rest.filter((z) => z.type === 'spot');
+    const bulbs = rest.filter((z) => !z.type || ['bulb'].includes(z.type));
+    const tables = rest.filter((z) => z.type === 'table');
+    const floors = rest.filter((z) => z.type === 'floor' || z.type === 'outdoor');
+    const walls = rest.filter((z) => z.type === 'wall' || z.type === 'switch');
+    const strips = rest.filter((z) => z.type === 'strip');
+    // pendants take the scene's free preferred drops first, the rest join the hanging pool
+    const freePend = def.pendX.filter((px) => !placed.some((p) => p.pos.x != null && Math.abs(p.pos.x - px) < 30));
+    pend.forEach((lp, i) => {
+      if (i < freePend.length) placed.push({ lamp: lp, kind: 'pendant', pos: { x: freePend[i], drop: def.pendDrop } });
+      else bulbs.push(lp);
+    });
+    // hanging pool: spots + bulbs, on preferred slots or spread evenly
+    const hangPool = [...spots.map((lp) => ({ lamp: lp, kind: 'spot' })), ...bulbs.map((lp) => ({ lamp: lp, kind: lp.type === 'ceiling' ? 'pendant' : 'bulbHang' }))];
+    const freeHang = def.hangX.filter((hx) => !placed.some((p) => p.pos.x != null && Math.abs(p.pos.x - hx) < 30));
+    const hxs = hangPool.length <= freeHang.length ? freeHang : (hangPool.length <= 4 ? spread(hangPool.length, def.hangSpan[0], def.hangSpan[1]) : spread(hangPool.length, 40, 440));
+    hangPool.forEach((h, i) => placed.push({ lamp: h.lamp, kind: h.kind === 'pendant' ? 'bulbHang' : h.kind, pos: { x: hxs[i] } }));
+    // table lamps: on furniture surfaces first, overflow stands on the floor
+    const floorPool = [];
+    const freeSurf = def.surfaces.filter((sf) => !placed.some((p) => p.pos.x != null && Math.abs(p.pos.x - sf.x) < 24));
+    tables.forEach((lp, i) => {
+      if (i < freeSurf.length) placed.push({ lamp: lp, kind: 'table', pos: freeSurf[i] });
+      else floorPool.push({ lamp: lp, kind: 'table' });
+    });
+    floors.forEach((lp) => floorPool.push({ lamp: lp, kind: lp.type === 'outdoor' ? 'lantern' : 'floor' }));
+    const fxs = floorPool.length <= def.floorSlots.length ? def.floorSlots : spread(floorPool.length, 50, 430);
+    floorPool.forEach((p, i) => placed.push({ lamp: p.lamp, kind: p.kind === 'table' ? 'table' : p.kind, pos: p.kind === 'table' ? { x: fxs[i], y: f } : { x: fxs[i] } }));
+    // wall lamps and switches at mid height near the edges
+    const wxs = walls.length <= def.wallX.length ? def.wallX : spread(walls.length, 30, 430);
+    walls.forEach((lp, i) => placed.push({ lamp: lp, kind: lp.type === 'switch' ? 'switch' : 'wall', pos: { x: wxs[i], y: c + 52 } }));
+    // strips: the scene's strip slot first, others along the floor
+    strips.forEach((lp, i) => {
+      if (i === 0 && def.stripSlot) placed.push({ lamp: lp, kind: 'strip', pos: def.stripSlot });
+      else { const sx = 60 + i * 100; placed.push({ lamp: lp, kind: 'strip', pos: { x1: sx, x2: sx + 80, y: f - 3 } }); }
+    });
+    const parts = [`<line x1="16" y1="${c}" x2="${SC.W - 16}" y2="${c}" stroke="var(--lg-border)" stroke-width="2"/>`,
+      `<line x1="16" y1="${f}" x2="${SC.W - 16}" y2="${f}" stroke="var(--lg-border)" stroke-width="2"/>`, def.furn];
+    const cx = (p) => p.kind === 'strip' ? (p.pos.x1 + p.pos.x2) / 2 : p.pos.x;
+    placed.sort((a, b) => cx(a) - cx(b));
+    let stagger = placed.length > 6;
+    for (let gi = 1; gi < placed.length; gi++) if (cx(placed[gi]) - cx(placed[gi - 1]) < 46) stagger = true;
+    for (let pi = 0; pi < placed.length; pi++) {
+      const p = placed[pi];
+      const d = sceneLampSvg(p.lamp, p.kind, p.pos);
+      const ly = f + 13 + (stagger && pi % 2 ? 11 : 0);
+      const lx = Math.min(Math.max(p.kind === 'strip' ? (p.pos.x1 + p.pos.x2) / 2 : p.pos.x, 24), SC.W - 24);
+      const nm = String(p.lamp.name || ''); const short = nm.length > 14 ? nm.slice(0, 13) + '…' : nm;
+      parts.push(`<g class="hs${p.lamp.available ? '' : ' unavail'}" onclick="tapLamp('${p.lamp.id}')" onpointerdown="pressStart('${p.lamp.id}')" onpointerup="pressEnd()" onpointerleave="pressEnd()" oncontextmenu="return false">` +
+        d.g + `<rect x="${d.hit.x}" y="${d.hit.y}" width="${d.hit.w}" height="${d.hit.h}" fill="transparent" pointer-events="all"/>` +
+        `<text x="${lx}" y="${ly}" font-size="8.5" fill="var(--lg-muted)" text-anchor="middle">${esc(short)}</text></g>`);
+    }
+    return `<svg viewBox="0 0 ${SC.W} ${SC.H}" xmlns="http://www.w3.org/2000/svg">${parts.join('')}</svg>`;
+  }
   function render() {
     const root = document.getElementById('root');
     const lamps = data.lamps;
     if (!lamps.length) { root.innerHTML = '<div class="empty">No lights selected.</div>'; setH(50); return; }
     if (S.layout === 'room') {
-      const zones = [...new Set(lamps.map((l) => l.zone))];
-      root.innerHTML = zones.map((z) => {
-        const ls = lamps.filter((l) => l.zone === z), on = ls.filter((l) => l.on && l.available).length;
-        const moods = S.moods === false ? [] : data.moods.filter((m) => m.zone === z);
-        return `<div class="room"><div class="hd"><span class="t">${esc(ls[0].zoneName)}</span><span class="s">${on ? `${on} of ${ls.length} on` : 'all off'}</span></div>` +
-          `<div class="lamps">${ls.map((l) => `<div class="lamp" onclick="tapLamp('${l.id}')" onpointerdown="pressStart('${l.id}')" onpointerup="pressEnd()" onpointerleave="pressEnd()" oncontextmenu="return false"><div class="art">${lampSvg(l, 52)}</div><div class="n" title="${esc(l.name)}">${esc(l.name)}</div><div class="n">${stateText(l)}</div></div>`).join('')}</div>` +
+      const rooms = [...new Set(lamps.map((l) => l.room || l.zone))];
+      root.innerHTML = rooms.map((z) => {
+        const ls = lamps.filter((l) => (l.room || l.zone) === z), on = ls.filter((l) => l.on && l.available).length;
+        const moods = S.moods === false ? [] : data.moods.filter((m) => (m.room || m.zone) === z);
+        return `<div class="room"><div class="hd"><span class="t">${esc(ls[0].roomName || ls[0].zoneName)}</span><span class="s">${on ? `${on} of ${ls.length} on` : 'all off'}</span></div>` +
+          `<div class="scene">${sceneSvg(ls, sceneKind(ls[0].roomName || ls[0].zoneName))}</div>` +
           `<div class="btns">${S.alloff === false ? '' : `<button class="btn brand" onclick="allOff('${z}')">All off</button>`}${moods.map(moodBtn).join('')}</div></div>`;
       }).join('');
       document.getElementById('foot').style.display = 'none';

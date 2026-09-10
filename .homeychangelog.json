@@ -1,4 +1,7 @@
 {
+  "0.12.0": {
+    "en": "Covering looks (shutter, shade, curtains, awning with interior rooms and openings), weather in the windows, grouped rooms with full-width option, rocker-style stop, assisted calibration wizard, lights room scenes, Somfy TaHoma support with hardened pairing, gateway device preview and persistent diagnostics."
+  },
   "0.11.3": {
     "en": "Scenes can include any Homey light, a room all-off or a Homey mood. Lights tab groups by room with grouped devices."
   },

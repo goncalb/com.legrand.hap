@@ -1,6 +1,6 @@
 {
   "name": {
-    "en": "Shutter"
+    "en": "Shutter / Covering"
   },
   "class": "windowcoverings",
   "capabilities": [
@@ -10,7 +10,8 @@
     "shutter_moving",
     "button.identify",
     "button.rebuild",
-    "button.reset_travel"
+    "button.reset_travel",
+    "button.calibrate"
   ],
   "platforms": [
     "local"
@@ -39,6 +40,79 @@
     }
   ],
   "settings": [
+    {
+      "type": "group",
+      "label": {
+        "en": "Appearance"
+      },
+      "children": [
+        {
+          "id": "look",
+          "type": "dropdown",
+          "label": {
+            "en": "Drawn as"
+          },
+          "value": "shutter",
+          "hint": {
+            "en": "How the Shutters widget draws this device. The position works the same (0\u2013100 %) for every look."
+          },
+          "values": [
+            {
+              "id": "shutter",
+              "label": {
+                "en": "Roller shutter"
+              }
+            },
+            {
+              "id": "shade",
+              "label": {
+                "en": "Roller shade (fabric)"
+              }
+            },
+            {
+              "id": "curtain_split",
+              "label": {
+                "en": "Curtain \u2014 split (two panels)"
+              }
+            },
+            {
+              "id": "curtain_single",
+              "label": {
+                "en": "Curtain \u2014 single panel"
+              }
+            },
+            {
+              "id": "awning",
+              "label": {
+                "en": "Awning (exterior, seen from outside)"
+              }
+            }
+          ]
+        },
+        {
+          "id": "awning_invert",
+          "type": "checkbox",
+          "label": {
+            "en": "Awning: invert direction"
+          },
+          "value": false,
+          "hint": {
+            "en": "Tick if the drawing extends when the real awning retracts. Only used by the Awning look."
+          }
+        },
+        {
+          "id": "interior_room",
+          "type": "label",
+          "label": {
+            "en": "Awning: interior room"
+          },
+          "value": "not set",
+          "hint": {
+            "en": "The room behind the awning's window \u2014 its lights make the drawn window glow. Set it in App settings \u2192 Devices \u2192 Awnings."
+          }
+        }
+      ]
+    },
     {
       "type": "group",
       "label": {
@@ -114,7 +188,7 @@
             "en": "s"
           },
           "hint": {
-            "en": "Seconds for a full 0 → 100 % travel. 0 = use the learned value above. A manual value takes precedence and pauses learning for this direction."
+            "en": "Seconds for a full 0 \u2192 100 % travel. 0 = use the learned value above. A manual value takes precedence and pauses learning for this direction."
           }
         },
         {
@@ -130,8 +204,19 @@
             "en": "s"
           },
           "hint": {
-            "en": "Seconds for a full 100 → 0 % travel. 0 = use the learned value above. Orientable shutters cannot be timed on a full close (the gateway reports the position only after the slats have re-opened), so set the time here if learning gives a value that is too high."
+            "en": "Seconds for a full 100 \u2192 0 % travel. 0 = use the learned value above. Orientable shutters cannot be timed on a full close (the gateway reports the position only after the slats have re-opened), so set the time here if learning gives a value that is too high."
           }
+        },
+        {
+          "id": "end_hold",
+          "type": "label",
+          "label": {
+            "en": "End hold (motor keeps \"moving\" status)"
+          },
+          "hint": {
+            "en": "Measured by \"Calibrate travel times\". Time the motor holds at fully closed / fully open before reporting stopped; subtracted when learning from full runs."
+          },
+          "value": "not measured"
         }
       ]
     }
@@ -177,6 +262,15 @@
       "uiComponent": null,
       "title": {
         "en": "Direction"
+      }
+    },
+    "button.calibrate": {
+      "maintenanceAction": true,
+      "title": {
+        "en": "Calibrate travel times"
+      },
+      "desc": {
+        "en": "Runs the shutter 90 \u2192 10 \u2192 90 % to measure the true speeds, then a full close and a full open to measure how long the motor holds at the ends before reporting stopped (orientable shutters hold ~30 s without moving). Takes a few minutes. Note: Homey's confirmation appears immediately and only means the calibration was started \u2014 follow the progress on the device banner and the Timeline."
       }
     }
   }

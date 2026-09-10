@@ -61,12 +61,33 @@ If Homey can't see a device via mDNS (different VLANs), pair it by HomeKit id + 
 
 | Status | What it means | Devices |
 |---|---|---|
-| ✅ **Verified** | Tested on real hardware by the author | Light switches (single/double), dimmers, roller shutters (aperture and orientable modes), wireless 2-button remotes, Smarther with Netatmo thermostat, the Legrand gateway itself |
+| ✅ **Verified** | Tested on real hardware by the author | Light switches (single/double), dimmers, roller shutters (aperture and orientable modes), wireless 2-button remotes, Smarther with Netatmo thermostat, the Legrand gateway itself · **Somfy TaHoma Switch** as a second HomeKit bridge with an io awning (extended/retracted, invert direction, awning look) |
 | 🧪 **Experimental — likely** | Implemented from the HomeKit specification; Legrand documents these as HomeKit-compatible but they have not been seen on hardware yet | Sockets, contactors, teleruptors, cable outlets (Legrand lists all "with Netatmo" outlets as HomeKit devices) · colour / tunable-white third-party bulbs · Netatmo smoke and CO alarms (standalone HomeKit accessories, paired like a Smarther) · thermostats exposing the standard Thermostat service |
 | 🧪 **Experimental — uncertain** | Code exists, exposure over HomeKit not confirmed | Wireless motion sensor (a gateway accessory in Legrand's US range) |
 | ❌ **Not possible** | Not exposed over HomeKit by Legrand/Netatmo | Netatmo door/window sensors (they pair with Netatmo cameras, cloud only), Netatmo modulating thermostat and radiator valves, energy meter / load shedder, BTicino alarm system, sirens, Home + Control scenes, schedules and Boost |
 
 Have an experimental device? Its dump from the app settings (Devices tab → status) or a log excerpt is all that's needed to promote it to verified — please open an issue.
+
+### Other HomeKit gateways
+
+The app is a generic HAP-over-IP controller: the Gateways tab discovers **every** HomeKit device on the
+network, and a paired bridge's **"Devices…"** button previews what it exposes before anything is added —
+name, manufacturer · model, and which driver each item would use ("not supported yet" items log their raw
+HAP services so support can be added). First non-Legrand bridge verified: the **Somfy TaHoma Switch**
+(io devices only — Somfy does not expose RTS over HomeKit). Candidates worth trying: Velux Active,
+Lutron Caséta, Aqara hubs, Bosch SHC. Pairing quirks are narrated end-to-end in the Log
+(advertisement refresh → TCP pre-flight → pairing method → verdict); the log survives restarts and
+updates, with a Clear button and a "wipe on restart" toggle for clean debug sessions.
+
+### Pairing icons
+
+<img src="docs/images/driver-icons.png" width="640" alt="Driver and pairing icons">
+
+Devices pair pre-dressed when the gateway tells us enough: slat tilt → orientable icon; models matching
+*awning/pergola* → awning icon, **sunshade** class and the Awning look; *curtain/glydea/rideau* → curtain
+icon, curtain class and the split-curtain look; *screen/rollershade* → shade icon and look. Everything
+else gets the roller default (Homey freezes the tile icon at pair time; the "Drawn as" look can always
+be changed later).
 
 All devices: **Blink** (identify the wall module) and **Rebuild device capabilities**
 maintenance actions in Advanced settings. Devices are identified by serial number, so they
@@ -103,10 +124,47 @@ Five widgets for Homey Dashboards, each configurable per instance (which devices
 
 <img src="docs/images/widget-shutters.png" width="420" alt="Shutters widget (screenshot)">
 
-Live-drawn windows: the sky follows the time of day (dawn, day, golden hour, night), the curtain follows
-position, the slat gaps follow tilt (sky visible through open slats), a ceiling pendant lights up when a
-lamp in that room is on. Animates while the motor runs at each shutter's learned travel speed. Tap to select,
-then **Open / Shade / Close** — with nothing selected the buttons act on all shown shutters.
+Live-drawn windows, grouped in a bordered box per room (name top-left, a pendant top-right that lights when a
+lamp in that room is on; an "individual" flat layout is available). The sky follows the time of day **and the
+weather** — clouds, falling rain or snow from Open-Meteo at Homey's location, sun on clear days, the moon on
+every night sky with the clouds passing in front. Tap windows or a room name to select, then
+**Open / Shade / Close** (relabelled **Retract / Half / Extend** when the widget shows only awnings). Pressing
+the direction a shutter is already moving in *stops* it, like the physical rocker — the position is estimated
+from the learned travel speed. A "Cards per row" setting (3 / 2 / 1) scales the drawings up to a full-width
+card — name and value in the left third, the façade in the remaining two — with line weights kept constant.
+
+##### Covering looks
+
+<img src="docs/images/widget-shutters-looks.png" width="640" alt="The five looks, rendered from the widget code">
+
+Every device has a **"Drawn as"** setting: **Roller shutter** (default, slats + tilt), **Roller shade** (fabric,
+curved hem, pull ring), **Curtain — split** (two panels closing from the sides), **Curtain — single**, and
+**Awning**. Position stays 0–100 % for every look; only the drawing changes. Models that announce themselves
+pair pre-dressed (see *Pairing icons* below).
+
+##### Awnings — seen from outside
+
+<img src="docs/images/awning-openings.png" width="640" alt="Awning opening types and configuration">
+<img src="docs/images/awning-sliding.png" width="640" alt="Wide sliding door">
+
+The awning card flips the vantage point: wall around the glass, the **interior** behind it — warm when the
+room's light is on, dark at night. Configure per awning in App settings → Devices → **Awnings**: 1 or 2
+openings, each with its own interior room (the awning may live in *Terrace* while *Living Room* lights its
+window) and an opening type — **Window · Full glass (opens from inside, no exterior handle) · French door ·
+Sliding door (wide, its two panes can glow from two rooms) · Door (push)**. An **invert direction** device
+setting handles gateways that report awnings mirrored (Somfy io does — their own app ships three invert
+toggles; here one switch at the device boundary covers position, direction and presets at once).
+
+##### Weather, dark mode, calibration
+
+<img src="docs/images/widget-shutters-weather.png" width="560" alt="Weather-aware windows">
+<img src="docs/images/widget-shutters-dark.png" width="560" alt="Dark mode">
+<img src="docs/images/calibration-wizard.png" width="640" alt="Assisted calibration wizard">
+
+Animation runs at each shutter's learned travel speed; the **Assisted calibration** wizard
+(App settings → Devices) measures true travel and the gateway's end-hold with your help — you tap the moment
+the shutter physically stops — and a maintenance button offers a fully automatic variant. All drawing chrome
+is theme-aware; dark mode gets muted frames, mullions and fabric.
 
 #### Heating
 
@@ -115,9 +173,11 @@ then **Open / Shade / Close** — with nothing selected the buttons act on all s
 Current profile and next switch, profile chips to override, a resume-schedule button, and one card per room
 with temperature → target, a flame while heating and manual/off tags.
 
-#### Lights *(new — any Homey light)*
+#### Lights *(any Homey light)*
 
-Tiles or room cards. Each lamp is drawn by type — ceiling, floor lamp, table lamp, bulb, LED strip, spot, wall switch, wall light, outdoor — in the colour
+Tiles, room cards, or **room scenes** — a side view of the room with furniture inferred from the room's name
+(kitchen counters, sofa and TV, beds, desks…) and each lamp drawn into place by type, anchored to matching
+furniture (hob spot over the cooktop, pendant over the table). Tap a lamp to toggle, hold for its panel. Each lamp is drawn by type — ceiling, floor lamp, table lamp, bulb, LED strip, spot, wall switch, wall light, outdoor — in the colour
 and brightness it currently emits (Hue colours, tunable whites, plain switches). Tap to toggle, "All off" per widget or
 per room, and the room's Homey moods as buttons. Lamp types are guessed from names and editable in App settings → Lights.
 
@@ -148,7 +208,7 @@ Design studies for the next widgets. Nothing here is built yet; feedback welcome
 | Candidates | Colour tints | Room thermostat gauge |
 |---|---|---|
 | ![Widget candidates](docs/images/roadmap-widgets.png) | ![Tint study](docs/images/roadmap-tints.png) | ![Gauge study](docs/images/roadmap-thermostat-gauge.png) |
-| **Lights** (tile grid or room list, any Homey light incl. Hue), **room thermostat**, **today's heating timeline**, **gateway health**, **sensors strip** | Tile backgrounds follow the bulb's colour and brightness; thermostat tint follows heating / idle / off — all faint, brand red as accent | Arc gauge over the 5–30 °C range with the target marker, − / + setpoint, per-room profile chips and a "Plan" button to rejoin the schedule |
+| **Room thermostat gauge** (redesign), **today's heating timeline**, **gateway health**, **sensors strip** | Tile backgrounds follow the bulb's colour and brightness; thermostat tint follows heating / idle / off — all faint, brand red as accent | Arc gauge over the 5–30 °C range with the target marker, − / + setpoint, per-room profile chips and a "Plan" button to rejoin the schedule |
 
 ## Heating plan
 
@@ -202,6 +262,8 @@ homey app run
 - `homey-api` + permission `homey:manager:api` — resolves widget device selections.
 
 ### Dead ends (kept so nobody retries them)
+- **`PairSetupWithAuth` as the first pairing method** — the Somfy TaHoma Switch ignores it entirely (40 s of silence), and the dangling attempt leaves the box reporting Busy (M2 Error 7) to the next try. Plain `PairSetup` (what aiohomekit uses) is answered instantly and pairs. Order is now plain first, with-auth as fallback. Related: the TaHoma restarts its HAP daemon after failed attempts and comes back on a NEW port — never pair against a cached advertisement (pair() refreshes mDNS first).
+- **`api.devices.connect()` to cut Web API load** — a connected devices manager serves cached device objects, but Homey realtime only patches that cache on `device.update` (rename, settings), never on capability value changes; every lamp and shutter state freezes at its startup value. Live values over the manager require `makeCapabilityInstance` per device+capability. `zones.connect()` is fine (zones update via `zone.update`).
 
 - **Stop for shutters**: Legrand exposes no HoldPosition and re-writing CurrentPosition does not
   halt travel. No stop command; the up/down state capability exists for Flows only and refuses "idle".

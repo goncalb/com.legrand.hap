@@ -27,7 +27,7 @@
         {
           "id": "room",
           "title": {
-            "en": "Room cards (lamps grouped by room)"
+            "en": "Room scenes (lamps drawn in the room)"
           }
         }
       ]
@@ -72,7 +72,7 @@
       "id": "moods",
       "type": "checkbox",
       "title": {
-        "en": "Show Homey mood buttons (room cards)"
+        "en": "Show Homey mood buttons (room scenes)"
       },
       "value": true
     }
