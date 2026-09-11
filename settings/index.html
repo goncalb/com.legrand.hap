@@ -86,6 +86,14 @@
     .help { padding: 0 12px 12px 12px; font-size: 13px; color: #444; line-height: 1.45; }
     .help ol, .help ul { margin: 4px 0 8px; padding-left: 18px; }
     .help p { margin: 4px 0 8px; }
+  /* awning config rows: label keeps its width, selects wrap below on narrow screens */
+  #awn-rows .row { flex-wrap: wrap; row-gap: 6px; }
+  #awn-rows .row .main { flex: 1 1 120px; min-width: 110px; }
+  #awn-rows .row select { max-width: 100%; min-width: 0; }
+  @media (max-width: 560px) {
+    #awn-rows .row .main { flex: 1 1 100%; }          /* label on its own line */
+    #awn-rows .row select { flex: 1 1 40%; }          /* the two selects share the next line */
+  }
   </style>
 </head>
 <body>
