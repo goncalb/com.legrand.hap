@@ -75,7 +75,17 @@ network, and a paired bridge's **"Devices…"** button previews what it exposes 
 name, manufacturer · model, and which driver each item would use ("not supported yet" items log their raw
 HAP services so support can be added). First non-Legrand bridge verified: the **Somfy TaHoma Switch**
 (io devices only — Somfy does not expose RTS over HomeKit). Candidates worth trying: Velux Active,
-Lutron Caséta, Aqara hubs, Bosch SHC. Pairing quirks are narrated end-to-end in the Log
+Lutron Caséta, Aqara hubs, Bosch SHC.
+
+**Next up — Gardena smart Gateway** (HomeKit confirmed by the vendor for smart Water Control,
+smart Irrigation Control, smart Sensor and smart Power Adapter; not the mower or pump): the Power
+Adapter should map to the existing Socket driver and the Sensor possibly to the Sensor driver as-is;
+Water/Irrigation Control expose HAP Valve services and need a small new **Valve/Irrigation driver**
+(on/off = Active, watering duration, Homey `sprinkler` class). The unit at hand is the **Dual Water
+Control — two valves**, so the driver must handle several Valve services per accessory and create
+one Homey device per valve (the accessory serial + valve index as device identity). Plan: pair,
+read the "Devices…" preview and the unsupported-accessory log lines, build the driver from what
+they report. Pairing quirks are narrated end-to-end in the Log
 (advertisement refresh → TCP pre-flight → pairing method → verdict); the log survives restarts and
 updates, with a Clear button and a "wipe on restart" toggle for clean debug sessions.
 
@@ -208,7 +218,7 @@ Design studies for the next widgets. Nothing here is built yet; feedback welcome
 | Candidates | Colour tints | Room thermostat gauge |
 |---|---|---|
 | ![Widget candidates](docs/images/roadmap-widgets.png) | ![Tint study](docs/images/roadmap-tints.png) | ![Gauge study](docs/images/roadmap-thermostat-gauge.png) |
-| **Room thermostat gauge** (redesign), **today's heating timeline**, **gateway health**, **sensors strip** | Tile backgrounds follow the bulb's colour and brightness; thermostat tint follows heating / idle / off — all faint, brand red as accent | Arc gauge over the 5–30 °C range with the target marker, − / + setpoint, per-room profile chips and a "Plan" button to rejoin the schedule |
+| **Room thermostat gauge** (redesign), **today's heating timeline**, **gateway health**, **sensors strip**, **Watering** (garden scene for Gardena valves — animated taps, per-zone Homey-side schedules with skip-when-raining via the weather module, RemainingDuration countdowns; per-zone output drawn as Tap (bed at its feet), Hose (nozzle to a far bed) or Sprinkler (hose-fed, fan arcs over the lawn — grass, not flowers); mockups: docs/images/roadmap-watering.png, roadmap-watering-outputs.png — drawn in the app's flat widget style) | Tile backgrounds follow the bulb's colour and brightness; thermostat tint follows heating / idle / off — all faint, brand red as accent | Arc gauge over the 5–30 °C range with the target marker, − / + setpoint, per-room profile chips and a "Plan" button to rejoin the schedule |
 
 ## Heating plan
 

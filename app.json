@@ -156,6 +156,10 @@
     "endpointAccessories": {
       "method": "GET",
       "path": "/endpoint-accessories"
+    },
+    "endpointAdopt": {
+      "method": "POST",
+      "path": "/endpoint-adopt"
     }
   },
   "images": {

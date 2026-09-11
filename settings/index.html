@@ -370,14 +370,27 @@
       ep.innerHTML = res.endpoints.length ? '' : '<div class="row"><div class="main muted">Nothing paired yet — pair a device below or import pairing data.</div></div>';
       for (const e of res.endpoints) {
         const addr = e.address ? (e.address.address + ':' + e.address.port) : '';
+        const disc = (res.discovered || []).find((d) => d.id === e.id);
+        const age = disc && disc.seenAt ? Math.round((Date.now() - disc.seenAt) / 60000) : null;
+        const advAddr = disc ? disc.address + ':' + disc.port : null;
+        const advSame = advAddr && advAddr === addr;
+        const advHtml = advAddr
+          ? 'advertised now: <b style="color:' + (advSame ? 'inherit' : '#b8860b') + '">' + esc(advAddr) + '</b>' +
+            (age != null ? ' <span style="opacity:0.7">(' + (age < 1 ? 'just now' : age + ' min ago') + ')</span>' : '') +
+            (advSame ? ' \u2713' : ' \u2014 differs!')
+          : 'advertised now: <span style="opacity:0.7">not seen via mDNS</span>';
         ep.innerHTML +=
           '<div class="row"><div class="main"><div class="t"><span class="dot' + (e.connected ? ' on' : '') + '"></span>' + esc(e.name) + '</div>' +
           '<div class="d">' + esc(e.id) + ' · ' + (e.connected ? e.accessories + ' accessories' : 'connecting…') + '</div>' +
           '<div class="d" style="margin-top:6px; display:flex; gap:6px; align-items:center">' +
+          '<span style="min-width:52px">in use:</span>' +
           '<input type="text" value="' + esc(addr) + '" placeholder="IP (optional)" style="width:150px" id="addr-' + e.id.replace(/:/g, '') + '">' +
-          '<button class="text" onclick="setAddress(\'' + e.id + '\')">Save IP</button>' +
+          '<button class="text" onclick="setAddress(\'' + e.id + '\')">Save</button>' +
           '<button class="text" onclick="toggleEpAcc(\'' + e.id + '\')">Devices\u2026</button>' +
           '<button class="text" onclick="removeEndpoint(\'' + e.id + '\')" style="color:#b33 !important">Remove</button></div>' +
+          '<div class="d" style="margin-top:4px; display:flex; gap:6px; align-items:center">' +
+          '<span>' + advHtml + '</span>' +
+          (advAddr && !advSame ? '<button class="text" onclick="adoptAddress(\'' + e.id + '\')">Adopt</button>' : '') + '</div>' +
           '<div id="epacc-' + e.id.replace(/:/g, '') + '" style="display:none"></div></div></div>';
       }
       const dl = document.getElementById('disclist');
@@ -445,6 +458,13 @@
     HomeyRef.confirm('Remove this HomeKit pairing from Homey? Its devices will become unavailable.', 'warning', (err, ok) => {
       if (!ok) return;
       HomeyRef.api('POST', '/endpoint-remove', { id }, () => { pairingStatus(); loadDevices(); });
+    });
+  }
+  function adoptAddress(id) {
+    HomeyRef.api('POST', '/endpoint-adopt', { id }, (err, res) => {
+      if (err) return HomeyRef.alert('Adopt failed: ' + err.message);
+      HomeyRef.alert(res.changed ? 'Adopted ' + res.address + ':' + res.port + ' \u2014 reconnecting' : 'Already on the advertised address (' + res.address + ':' + res.port + ')');
+      setTimeout(pairingStatus, 1500);
     });
   }
   function toggleEpAcc(id) {
@@ -1002,9 +1022,9 @@
         const two = a.n === 2, sld = a.t1 === 'sliding';
         return '<div class="awnrow" data-serial="' + esc(a.serial) + '">' +
           '<div class="row"><div class="main"><div class="t">' + esc(a.name) + '</div></div>' +
-          '<select data-f="n" onchange="saveAwnRow(this)"><option value="1"' + (two ? '' : ' selected') + '>1 opening</option><option value="2"' + (two ? ' selected' : '') + '>2 openings</option></select></div>' +
-          '<div class="row"><div class="main"><div class="d">Opening 1</div></div>' + roomSel('z1', a.z1) + typeSel('t1', a.t1) + '</div>' +
-          '<div class="row awn-2" style="display:' + (two ? 'flex' : 'none') + '"><div class="main"><div class="d">Opening 2</div></div>' + roomSel('z2', a.z2) + typeSel('t2', a.t2) + '</div>' +
+          '<select data-f="n" onchange="saveAwnRow(this)"><option value="1"' + (two ? '' : ' selected') + '>1 window / blind</option><option value="2"' + (two ? ' selected' : '') + '>2 windows / blinds</option></select></div>' +
+          '<div class="row"><div class="main"><div class="d">Window / blind 1</div></div>' + roomSel('z1', a.z1) + typeSel('t1', a.t1) + '</div>' +
+          '<div class="row awn-2" style="display:' + (two ? 'flex' : 'none') + '"><div class="main"><div class="d">Window / blind 2</div></div>' + roomSel('z2', a.z2) + typeSel('t2', a.t2) + '</div>' +
           '<div class="row awn-p2" style="display:' + (!two && sld ? 'flex' : 'none') + '"><div class="main"><div class="d">Right pane room (optional)</div></div>' + roomSel('z2', a.z2) + '</div>' +
           '</div>';
       }).join('');

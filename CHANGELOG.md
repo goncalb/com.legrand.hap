@@ -44,6 +44,9 @@ All notable changes to this project are documented here. Versions follow [Semant
 - Manual pairing address was ignored when the device was discovered; pairing could hang without a verdict;
   the failure handler crashed (`logger.log`); ManagerApi warning for the calibration helper.
 - Sliding-door panes drawn at equal height; awning moving parts hidden at 0 %.
+- Link-local addresses (169.254/16, fe80::) advertised by gateways mid-boot are never adopted — for
+  endpoints or pairing. After repeated reconnect failures the mDNS browser restarts (interface flaps
+  silently kill multicast sockets) and the endpoint follows the gateway to its current address.
 
 ## [0.11.3] — 2026-09-08
 

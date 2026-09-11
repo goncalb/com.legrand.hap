@@ -59,17 +59,27 @@ module.exports = {
       }
       return '';
     };
-    return homey.app.session.listAccessories().map((a) => {
-      const h = homeyBySerial.get(a.serial);
-      const klass = (a.aid === 1 && a.klass === 'unknown') ? 'gateway' : a.klass;
-      return {
-        serial: a.serial, name: a.name, friendlyName: names[a.serial] || null, homeyName: h ? h.homeyName : null, added: !!h,
-        model: a.model, firmware: a.firmware, aid: a.aid, klass, endpoint: a.endpoint,
-        hasTilt: !!a.chars.TargetHorizontalTiltAngle, hasDim: !!a.chars.Brightness,
-        status: klass === 'gateway' ? (homey.app.session.isConnected(a.serial) ? 'connected' : 'offline') : statusOf(a),
-      };
-    }).sort((x, y) => (order[x.klass] ?? 9) - (order[y.klass] ?? 9)
-      || String(x.homeyName || x.friendlyName || x.name).localeCompare(String(y.homeyName || y.friendlyName || y.name)));
+    // every paired endpoint is a "gateway" row — bridges and standalone devices alike
+    const gwRows = homey.app.session.listEndpoints().map((e) => ({
+      serial: e.id, name: e.name, friendlyName: null, homeyName: null, added: true,
+      model: (e.connected ? e.accessories + ' accessories' : '') + (e.address ? (e.connected ? ' · ' : '') + e.address.address + ':' + e.address.port : ''),
+      firmware: '', aid: 1, klass: 'gateway', endpoint: e.id,
+      hasTilt: false, hasDim: false,
+      status: e.connected ? 'connected' : 'offline',
+    })).sort((x, y) => String(x.name).localeCompare(String(y.name)));
+    const accRows = homey.app.session.listAccessories()
+      .filter((a) => !(a.klass === 'bridge' || (a.aid === 1 && a.klass === 'unknown')))   // endpoints carry the gateway rows now
+      .map((a) => {
+        const h = homeyBySerial.get(a.serial);
+        return {
+          serial: a.serial, name: a.name, friendlyName: names[a.serial] || null, homeyName: h ? h.homeyName : null, added: !!h,
+          model: a.model, firmware: a.firmware, aid: a.aid, klass: a.klass, endpoint: a.endpoint,
+          hasTilt: !!a.chars.TargetHorizontalTiltAngle, hasDim: !!a.chars.Brightness,
+          status: statusOf(a),
+        };
+      }).sort((x, y) => (order[x.klass] ?? 9) - (order[y.klass] ?? 9)
+        || String(x.homeyName || x.friendlyName || x.name).localeCompare(String(y.homeyName || y.friendlyName || y.name)));
+    return gwRows.concat(accRows);
   },
 
   async identify({ homey, body }) { await homey.app.session.identify(body.serial); return true; },
@@ -122,13 +132,29 @@ module.exports = {
     return true;
   },
   async removeEndpoint({ homey, body }) { return homey.app.session.removeEndpoint(body.id); },
+  // ask mDNS for the gateway's current address and adopt it (stale manual IPs after router changes)
+  async endpointAdopt({ homey, body }) {
+    const session = homey.app.session;
+    const id = String(body.id || '').toUpperCase();
+    const ep = session.endpoints.get(id);
+    if (!ep) throw new Error('Endpoint not found');
+    const cur = await session.refreshAdvertisement(id, 4500);
+    if (!cur) throw new Error('No advertisement seen — the gateway is not visible via mDNS (check power, VLAN/reflection), or enter the IP manually');
+    if (/^169\.254\./.test(cur.address) || cur.address === '0.0.0.0') throw new Error(`Only a link-local address (${cur.address}) is advertised — the gateway is still booting; try again in a minute`);
+    const changed = !ep.cfg.address || ep.cfg.address.address !== cur.address || ep.cfg.address.port !== cur.port;
+    ep.cfg.address = { address: cur.address, port: cur.port };
+    session._persist();
+    session.log('info', null, `[${ep.cfg.name || id}] adopted advertised address ${cur.address}:${cur.port}${changed ? '' : ' (unchanged)'}`);
+    try { ep.stop(); ep._stopped = false; ep.connect().catch(() => {}); } catch { /* reconnect best-effort */ }
+    return { address: cur.address, port: cur.port, changed };
+  },
   // what a paired bridge exposes, and which driver would pick each item up — before adding anything
   async endpointAccessories({ homey, query }) {
     const ep = homey.app.session.endpoints.get(String(query.id || '').toUpperCase());
     if (!ep) throw new Error('Endpoint not found');
     const driverOf = { light: 'Light', shutter: 'Shutter', thermostat: 'Thermostat', socket: 'Socket', sensor: 'Sensor', remote: 'Remote', bridge: null };
     return [...ep.accessories.values()]
-      .filter((a) => !(a.aid === 1 && a.klass === 'unknown'))   // the bridge's own mandatory accessory
+      .filter((a) => !(a.klass === 'bridge' || (a.aid === 1 && a.klass === 'unknown')))   // the bridge's own mandatory accessory
       .map((a) => ({
       serial: a.serial, name: a.name, model: a.model, manufacturer: a.manufacturer,
       klass: a.klass, driver: driverOf[a.klass] || null,
