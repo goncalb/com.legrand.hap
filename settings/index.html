@@ -44,6 +44,7 @@
     body button.danger { color: #b33 !important; }
     .actions { display: flex; gap: 8px; margin: 12px 0 0; }
     .actions button { flex: 1; padding: 10px 0 !important; border-radius: 10px !important; }
+    .actions.stick { position: sticky; bottom: 0; z-index: 5; margin: 12px -4px 0; padding: 10px 4px calc(10px + env(safe-area-inset-bottom)); background: var(--lg-bg, #f2f2f5); box-shadow: 0 -6px 12px -8px rgba(0,0,0,0.25); }
     .full { width: 100%; }
 
     /* toggle switch */
@@ -169,7 +170,7 @@
       <div class="group" id="scenelights"><div class="row"><div class="main muted">Loading…</div></div></div>
       <div class="section">Climate on Homey <span style="text-transform:none; letter-spacing:0">— thermostats and air conditioners from other apps</span></div>
       <div class="group" id="sceneclimate"><div class="row"><div class="main muted">Loading…</div></div></div>
-      <div class="actions">
+      <div class="actions stick">
         <button class="primary" onclick="saveScene()">Save scene</button>
         <button onclick="cancelScene()">Cancel</button>
       </div>
@@ -206,7 +207,7 @@
       <div class="matrix"><span>Away</span><input type="number" id="h-away" step="0.5" min="5" max="30" /><span class="muted">°C</span><span></span><span></span></div>
       <div class="matrix"><span>Frost guard</span><input type="number" id="h-frost" step="0.5" min="5" max="15" /><span class="muted">°C</span><span></span><span></span></div>
     </div>
-    <div class="actions"><button class="primary" onclick="saveHeating()">Save heating plan</button><button onclick="loadHeating()">Discard changes</button></div>
+    <div class="actions stick"><button class="primary" onclick="saveHeating()">Save heating plan</button><button onclick="loadHeating()">Discard changes</button></div>
     <p class="muted" style="margin:8px 12px">Switch the thermostats' own schedule off in Home + Control (manual mode) so both plans don't compete.</p>
   </div>
 
