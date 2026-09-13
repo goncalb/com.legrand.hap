@@ -32,6 +32,12 @@ All notable changes to this project are documented here. Versions follow [Semant
   debug-level accessory inventory per DB refresh.
 - **Pairing auto-dress**: awning/curtain/screen models pair with matching icon, class and look; new thin
   filled-path icon family (driver tile + five types).
+- **Sticky Save bars** on the Scenes and Heating tabs — pinned to the viewport bottom while the tab
+  scrolls (Delete stays non-sticky on purpose).
+- **Scenes in natural name order** everywhere (settings, widget, Flow picker) — read-time sort,
+  storage and ids untouched, existing Flows unaffected.
+- **Devices tab GATEWAYS card lists every paired endpoint** — bridges and standalone devices alike,
+  with accessory count, address and connection status.
 
 ### Changed
 - Windows render ~30 % larger in the grouped layout; dark mode fully theme-aware (frames, mullions, slats,
@@ -44,6 +50,11 @@ All notable changes to this project are documented here. Versions follow [Semant
 - Manual pairing address was ignored when the device was discovered; pairing could hang without a verdict;
   the failure handler crashed (`logger.log`); ManagerApi warning for the calibration helper.
 - Sliding-door panes drawn at equal height; awning moving parts hidden at 0 %.
+- Gateway rows vanished from the Devices tab ("No gateway connected") — the bridge klass rename was
+  not applied to the Devices route and the endpoint preview filter.
+- Awning config rows wrapped one letter per line on iPhone — labels keep a minimum width; under
+  560 px the label takes its own line with the two selects paired beneath it. Wording: "# openings"
+  → "# windows / blinds".
 - Link-local addresses (169.254/16, fe80::) advertised by gateways mid-boot are never adopted — for
   endpoints or pairing. After repeated reconnect failures the mDNS browser restarts (interface flaps
   silently kill multicast sockets) and the endpoint follows the gateway to its current address.
